@@ -56,12 +56,12 @@ const SERVICES = [
   { title: "30-Day Easy Returns", text: "Exchange or return within 30 days." },
 ];
 const COLLECTIONS = [
-  { name: "Bras", accent: "linear-gradient(160deg,#8a2458,#1a0810)" },
-  { name: "Panties", accent: "linear-gradient(160deg,#3d1a5c,#100814)" },
-  { name: "Lingerie", accent: "linear-gradient(160deg,#b04a1a,#1a0c08)" },
-  { name: "Shapewear", accent: "linear-gradient(160deg,#1f5a4a,#081410)" },
-  { name: "Sleepwear", accent: "linear-gradient(160deg,#9b1f5a,#140810)" },
-  { name: "Thermal", accent: "linear-gradient(160deg,#1a3a58,#080c14)" },
+  { name: "Bras", accent: "linear-gradient(160deg,#8a2458,#1a0810)", image: photo("photo-1515886657613-9f3515b0c78f", 720) },
+  { name: "Panties", accent: "linear-gradient(160deg,#3d1a5c,#100814)", image: photo("photo-1469334031218-e382a71b716b", 720) },
+  { name: "Lingerie", accent: "linear-gradient(160deg,#b04a1a,#1a0c08)", image: photo("photo-1524504388940-b1c1722653e1", 720) },
+  { name: "Shapewear", accent: "linear-gradient(160deg,#1f5a4a,#081410)", image: photo("photo-1515372039744-b8f02a3ae446", 720) },
+  { name: "Sleepwear", accent: "linear-gradient(160deg,#9b1f5a,#140810)", image: photo("photo-1490481651871-ab68de25d43d", 720) },
+  { name: "Thermal", accent: "linear-gradient(160deg,#1a3a58,#080c14)", image: photo("photo-1487412720507-e7ab37603c6f", 720) },
 ];
 const POSTS = [
   { id: "fit-guide", title: "The first-fit bra guide", date: "May 12, 2026", excerpt: "How to choose everyday support.", body: "Start with band first, then cup." },
@@ -297,13 +297,13 @@ function App() {
         </div>
       </section>
       <section className="page"><div className="catalog-head"><h2>Shop by collection</h2></div>
-        <div className="collections">{COLLECTIONS.map((c) => <button key={c.name} type="button" className="col-card" style={{ background: c.accent }} onClick={() => goShop(c.name as (typeof CATEGORIES)[number])}><span>{c.name}</span></button>)}</div></section>
+        <div className="collections">{COLLECTIONS.map((c) => <button key={c.name} type="button" className="col-card" style={{ backgroundImage: `${c.accent}, url(${c.image})` }} onClick={() => goShop(c.name as (typeof CATEGORIES)[number])}><span>{c.name}</span></button>)}</div></section>
       <section className="page split-banner"><p className="eyebrow">New collection</p><h2>Support that moves with you</h2><button type="button" className="cta" onClick={() => goShop("Bras")}>Shop now</button></section>
       <section className="page"><div className="catalog-head"><h2>Shop best collection</h2></div><div className="grid">{PRODUCTS.slice(0, 8).map(productCard)}</div></section>
       <section className="page"><div className="catalog-head"><h2>Lookbook</h2></div>
         <div className="lookbook">{LOOKBOOK.map((l) => (
           <button key={l.name} type="button" className="look-card" onClick={() => goShop(l.name as (typeof CATEGORIES)[number])}>
-            <video src={l.video} muted loop playsInline preload="none" poster={photo("photo-1515886657613-9f3515b0c78f", 480)} onMouseEnter={(e) => { void e.currentTarget.play().catch(() => {}); }} onMouseLeave={(e) => { e.currentTarget.pause(); }} />
+            <video src={l.video} muted loop playsInline autoPlay preload="metadata" />
             <span className="card-cat">{l.name}</span><strong>Start {money(l.price)}</strong>
           </button>
         ))}</div></section>
