@@ -55,12 +55,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT_ID_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -n "${ACCOUNT_ID_SECRET:-}" ]; then
-            echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT_ID_SECRET" >> "$GITHUB_ENV"
-            export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID_SECRET"
-          else
-            unset CLOUDFLARE_ACCOUNT_ID || true
-          fi
+          ACCOUNT="${ACCOUNT_ID_SECRET:-1e611220afd75688b509ba299e98bde7}"
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
+          export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT"
+          echo "Using Cloudflare account $ACCOUNT"
           node scripts/ensure-d1.mjs
 
       - name: Build
@@ -71,6 +69,7 @@ jobs:
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1e611220afd75688b509ba299e98bde7"
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           packageManager: npm
           wranglerVersion: "4.126.0"
@@ -122,12 +121,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT_ID_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -n "${ACCOUNT_ID_SECRET:-}" ]; then
-            echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT_ID_SECRET" >> "$GITHUB_ENV"
-            export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID_SECRET"
-          else
-            unset CLOUDFLARE_ACCOUNT_ID || true
-          fi
+          ACCOUNT="${ACCOUNT_ID_SECRET:-1e611220afd75688b509ba299e98bde7}"
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
+          export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT"
+          echo "Using Cloudflare account $ACCOUNT"
           node scripts/ensure-d1.mjs
 
       - name: Build
@@ -138,6 +135,7 @@ jobs:
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1e611220afd75688b509ba299e98bde7"
           packageManager: npm
           wranglerVersion: "4.126.0"
           command: d1 migrations apply vite-react-db --remote
@@ -147,6 +145,7 @@ jobs:
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1e611220afd75688b509ba299e98bde7"
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           packageManager: npm
           wranglerVersion: "4.126.0"

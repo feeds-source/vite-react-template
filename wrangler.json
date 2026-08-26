@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vite-react-template",
+  "account_id": "1e611220afd75688b509ba299e98bde7",
   "main": "./src/worker/index.ts",
   "compatibility_date": "2025-10-08",
   "compatibility_flags": ["nodejs_compat"],
@@ -18,7 +19,7 @@
     {
       "binding": "DB",
       "database_name": "vite-react-db",
-      "database_id": "f489aa40-0853-44ca-b8e6-bb9fede8b088",
+      "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations"
     }
   ],
