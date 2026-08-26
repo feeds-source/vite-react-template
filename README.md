@@ -2,6 +2,22 @@
 
 Full-stack notes app with **D1**, **email/password auth**, and **GitHub + Google OAuth**.
 
+## Live on Cloudflare
+
+**App:** [https://vite-react-template.unruly-bounce.workers.dev](https://vite-react-template.unruly-bounce.workers.dev)
+
+This is a **temporary preview account** so the site is public immediately. **Claim it within 60 minutes** or Cloudflare deletes the account and the URL goes away:
+
+**[Claim this deployment](https://dash.cloudflare.com/claim-preview?claimToken=GsXRRi8uIRdDljTuGYgQjOrUT0X7ZZnK5x9x9qoZl68)**
+
+1. Open the claim link, sign in (or create a Cloudflare account), and finish the prompts.
+2. After claiming, add these GitHub Actions secrets on the repo:
+   - `CLOUDFLARE_API_TOKEN` — [Create token](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) with Workers + D1 edit
+   - `CLOUDFLARE_ACCOUNT_ID` — `aedee6c75c522d80181feb43639ef0a6`
+3. Later pushes to `main` deploy via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). You can also run **Actions → Deploy to Cloudflare → Run workflow**.
+
+D1 database `vite-react-db` is created and migrations are applied. Set OAuth worker secrets after claiming if you want GitHub/Google sign-in in production.
+
 ## Features
 
 - Email/password register & login
@@ -9,6 +25,7 @@ Full-stack notes app with **D1**, **email/password auth**, and **GitHub + Google
 - Session tokens (Bearer) with `requireAuth` middleware
 - Notes scoped per user
 - Dependency auditing (`npm audit` / `npm audit fix`) in CI
+- Auto-deploy to Cloudflare Workers
 
 ## Quick start
 
@@ -50,9 +67,10 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put OAUTH_STATE_SECRET
 ```
 
-Set `APP_URL` in `wrangler.json` `vars` to your production origin (e.g. `https://your-worker.workers.dev`).
+`APP_URL` in `wrangler.json` is set to `https://vite-react-template.unruly-bounce.workers.dev`. Update OAuth app callback URLs to match:
 
-Update OAuth app callback URLs to match production.
+- `https://vite-react-template.unruly-bounce.workers.dev/api/auth/oauth/github/callback`
+- `https://vite-react-template.unruly-bounce.workers.dev/api/auth/oauth/google/callback`
 
 ```bash
 npx wrangler d1 migrations apply vite-react-db --remote
@@ -100,6 +118,7 @@ All require `Authorization: Bearer <token>` and are scoped to the current user.
 ├── .github/
 │   ├── dependabot.yml
 │   └── workflows/
+│       ├── deploy.yml
 │       ├── npm-audit.yml
 │       └── npm-audit-fix.yml
 ├── .npmrc

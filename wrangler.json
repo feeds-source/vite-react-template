@@ -8,6 +8,8 @@
 		"enabled": true
 	},
 	"upload_source_maps": true,
+	"workers_dev": true,
+	"preview_urls": true,
 	"assets": {
 		"directory": "./dist/client",
 		"not_found_handling": "single-page-application"
@@ -16,11 +18,11 @@
 		{
 			"binding": "DB",
 			"database_name": "vite-react-db",
-			"database_id": "local-dev-placeholder",
+			"database_id": "f489aa40-0853-44ca-b8e6-bb9fede8b088",
 			"migrations_dir": "migrations"
 		}
 	],
 	"vars": {
-		"APP_URL": "http://localhost:5173"
+		"APP_URL": "https://vite-react-template.unruly-bounce.workers.dev"
 	}
 }
