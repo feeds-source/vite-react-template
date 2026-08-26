@@ -61,7 +61,7 @@ npm run build && npm run deploy
 
 ## Security / npm audit
 
-Current lockfile is clean (0 vulnerabilities). Install does not fail on advisories (`.npmrc` `audit=false`); CI and the scripts below are the gate.
+Lockfile is currently clean (**0** vulnerabilities) after upgrading `hono` to 4.13.5, `wrangler` to 4.126.0, and `@cloudflare/vite-plugin` to 1.54.0. Install does not fail on advisories (`.npmrc` `audit=false`); CI and the scripts below are the gate.
 
 | Script | What it does |
 |--------|----------------|
