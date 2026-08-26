@@ -1,0 +1,72 @@
+name: npm audit fix
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: npm-audit-fix
+  cancel-in-progress: false
+
+jobs:
+  audit-fix:
+    name: Apply npm audit fix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Report current audit
+        run: npm audit || true
+
+      - name: Apply compatible npm audit fix
+        run: npm audit fix
+
+      - name: Verify the tree still builds
+        run: npm run build
+
+      - name: Open or update pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No compatible audit fixes available."
+            exit 0
+          fi
+
+          gh label create security --color E11D48 --description "Security-related" --force || true
+          gh label create dependencies --color 0366D6 --description "Dependency updates" --force || true
+          gh label create javascript --color F7DF1E --description "JavaScript" --force || true
+
+          BRANCH="chore/npm-audit-fix"
+          git checkout -B "$BRANCH"
+          git add package.json package-lock.json
+          git commit -m "fix(deps): apply npm audit fix"
+          git push -u origin "$BRANCH" --force
+
+          if [ "$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')" = "0" ]; then
+            gh pr create --title "fix(deps): npm audit fix" --label dependencies --label javascript --label security --body "Opened by the npm audit fix workflow. Compatible semver updates only (not --force). npm run build passed after the fix. Review the lockfile diff and merge when ready."
+          else
+            echo "Existing audit-fix PR updated."
+          fi
