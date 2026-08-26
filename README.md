@@ -8,6 +8,7 @@ Full-stack notes app with **D1**, **email/password auth**, and **GitHub + Google
 - GitHub and Google OAuth
 - Session tokens (Bearer) with `requireAuth` middleware
 - Notes scoped per user
+- Dependency auditing (`npm audit` / `npm audit fix`) in CI
 
 ## Quick start
 
@@ -58,6 +59,24 @@ npx wrangler d1 migrations apply vite-react-db --remote
 npm run build && npm run deploy
 ```
 
+## Security / npm audit
+
+Current lockfile is clean (0 vulnerabilities). Install does not fail on advisories (`.npmrc` `audit=false`); CI and the scripts below are the gate.
+
+| Script | What it does |
+|--------|----------------|
+| `npm run audit` | Full tree; fails on **moderate+** (`audit-level=moderate`) |
+| `npm run audit:prod` | Production deps only; fails on **high+** |
+| `npm run audit:fix` | Apply compatible `npm audit fix` updates (never `--force`) |
+
+**CI gate** — [`.github/workflows/npm-audit.yml`](.github/workflows/npm-audit.yml) runs both audit jobs on every PR, push to `main`, and weekly.
+
+**Auto-fix PRs** — [`.github/workflows/npm-audit-fix.yml`](.github/workflows/npm-audit-fix.yml) runs `npm audit fix` every Monday, verifies `npm run build`, and opens/updates a `chore/npm-audit-fix` PR when the lockfile changes. Dispatch it anytime from **Actions → npm audit fix → Run workflow**.
+
+`--force` is intentionally omitted: it can jump major versions. Use that locally only when you mean to take a breaking upgrade.
+
+**Dependabot** — [`.github/dependabot.yml`](.github/dependabot.yml) opens weekly grouped PRs for npm (prod + dev, minor/patch) and GitHub Actions.
+
 ## Auth API
 
 | Method | Path | Auth | Description |
@@ -78,6 +97,12 @@ All require `Authorization: Bearer <token>` and are scoped to the current user.
 ## Project structure
 
 ```
+├── .github/
+│   ├── dependabot.yml
+│   └── workflows/
+│       ├── npm-audit.yml
+│       └── npm-audit-fix.yml
+├── .npmrc
 ├── migrations/
 │   ├── 0001_init.sql
 │   ├── 0002_auth.sql
