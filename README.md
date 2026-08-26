@@ -11,12 +11,27 @@ This is a **temporary preview account** so the site is public immediately. **Cla
 **[Claim this deployment](https://dash.cloudflare.com/claim-preview?claimToken=GsXRRi8uIRdDljTuGYgQjOrUT0X7ZZnK5x9x9qoZl68)**
 
 1. Open the claim link, sign in (or create a Cloudflare account), and finish the prompts.
-2. After claiming, add these GitHub Actions secrets on the repo:
-   - `CLOUDFLARE_API_TOKEN` — [Create token](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/) with Workers + D1 edit
-   - `CLOUDFLARE_ACCOUNT_ID` — `aedee6c75c522d80181feb43639ef0a6`
-3. Later pushes to `main` deploy via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). You can also run **Actions → Deploy to Cloudflare → Run workflow**.
+2. After claiming, add **one** GitHub Actions secret on this repo (**Settings → Secrets and variables → Actions**):
+   - `CLOUDFLARE_API_TOKEN` — [Create token](https://dash.cloudflare.com/profile/api-tokens) using **Edit Cloudflare Workers**, and include **D1 Edit**
+3. Account ID is already in [`wrangler.json`](wrangler.json) (`aedee6c75c522d80181feb43639ef0a6`). You do **not** need `CLOUDFLARE_ACCOUNT_ID` as a secret.
+4. Re-run **Actions → Deploy to Cloudflare**, or push to `main`.
 
 D1 database `vite-react-db` is created and migrations are applied. Set OAuth worker secrets after claiming if you want GitHub/Google sign-in in production.
+
+## Automated deploys
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on every push to `main`, every PR into `main`, and on **workflow_dispatch**.
+
+| Event | What happens |
+|--------|----------------|
+| Push to `main` / Run workflow | `npm ci` → `npm run build` → D1 migrations (`--remote --yes`) → `wrangler deploy` |
+| Pull request | Same build, then `wrangler versions upload` (preview URL, not production) |
+
+Uses `cloudflare/wrangler-action@v4` with Wrangler **4.126.0**. GitHub Environments `production` and `preview` exist (no protection rules). Until `CLOUDFLARE_API_TOKEN` is set, deploy steps are skipped with a warning so the workflow stays valid.
+
+If you also connect **Workers Builds** in the Cloudflare dashboard, pick **either** that **or** this Actions workflow — not both — or every push will deploy twice.
+
+Do **not** enable GitHub Actions “secrets in `if:`” checks; GitHub rejects that (`Unrecognized named-value: 'secrets'`), which is why the first deploy workflow file failed to start.
 
 ## Features
 

@@ -1,28 +1,29 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "vite-react-template",
-	"main": "./src/worker/index.ts",
-	"compatibility_date": "2025-10-08",
-	"compatibility_flags": ["nodejs_compat"],
-	"observability": {
-		"enabled": true
-	},
-	"upload_source_maps": true,
-	"workers_dev": true,
-	"preview_urls": true,
-	"assets": {
-		"directory": "./dist/client",
-		"not_found_handling": "single-page-application"
-	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "vite-react-db",
-			"database_id": "f489aa40-0853-44ca-b8e6-bb9fede8b088",
-			"migrations_dir": "migrations"
-		}
-	],
-	"vars": {
-		"APP_URL": "https://vite-react-template.unruly-bounce.workers.dev"
-	}
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vite-react-template",
+  "account_id": "aedee6c75c522d80181feb43639ef0a6",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vite-react-db",
+      "database_id": "f489aa40-0853-44ca-b8e6-bb9fede8b088",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "APP_URL": "https://vite-react-template.unruly-bounce.workers.dev"
+  }
 }
