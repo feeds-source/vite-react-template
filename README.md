@@ -13,7 +13,7 @@ This is a **temporary preview account** so the site is public immediately. **Cla
 1. Open the claim link, sign in (or create a Cloudflare account), and finish the prompts.
 2. After claiming, add **one** GitHub Actions secret on this repo (**Settings → Secrets and variables → Actions**):
    - `CLOUDFLARE_API_TOKEN` — [Create token](https://dash.cloudflare.com/profile/api-tokens) using **Edit Cloudflare Workers**, and include **D1 Edit**
-3. Account ID is already in [`wrangler.json`](wrangler.json) (`aedee6c75c522d80181feb43639ef0a6`). You do **not** need `CLOUDFLARE_ACCOUNT_ID` as a secret.
+3. Optional: `CLOUDFLARE_ACCOUNT_ID` only if that token can access more than one account. Otherwise Wrangler uses the token's account (and creates `vite-react-db` there if needed).
 4. Re-run **Actions → Deploy to Cloudflare**, or push to `main`.
 
 D1 database `vite-react-db` is created and migrations are applied. Set OAuth worker secrets after claiming if you want GitHub/Google sign-in in production.
@@ -24,7 +24,7 @@ D1 database `vite-react-db` is created and migrations are applied. Set OAuth wor
 
 | Event | What happens |
 |--------|----------------|
-| Push to `main` / Run workflow | `npm ci` → `npm run build` → D1 migrations (`--remote --yes`) → `wrangler deploy` |
+| Push to `main` / Run workflow | `npm ci` → ensure D1 → `npm run build` → D1 migrations (`--remote`) → `wrangler deploy` |
 | Pull request | Same build, then `wrangler versions upload` (preview URL, not production) |
 
 Uses `cloudflare/wrangler-action@v4` with Wrangler **4.126.0**. GitHub Environments `production` and `preview` exist (no protection rules). Until `CLOUDFLARE_API_TOKEN` is set, deploy steps are skipped with a warning so the workflow stays valid.
