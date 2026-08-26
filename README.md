@@ -1,60 +1,60 @@
-# React + Vite + Hono + Cloudflare Workers + D1 + Auth
+# React + Vite + Hono + Cloudflare Workers + D1 + Auth + OAuth
 
-Full-stack notes app with **Cloudflare D1** and **session-based authentication**.
-
-- **Frontend**: React 19 + Vite
-- **Backend**: Hono on Cloudflare Workers
-- **Database**: Cloudflare D1
-- **Auth**: Email/password + Bearer session tokens (PBKDF2 hashing via Web Crypto)
+Full-stack notes app with **D1**, **email/password auth**, and **GitHub + Google OAuth**.
 
 ## Features
 
-- Register / login / logout
-- `requireAuth` middleware on protected routes
+- Email/password register & login
+- GitHub and Google OAuth
+- Session tokens (Bearer) with `requireAuth` middleware
 - Notes scoped per user
-- Local D1 via Wrangler migrations
 
 ## Quick start
 
 ```bash
 npm install
-```
-
-### 1. Create the D1 database (production)
-
-```bash
-npx wrangler d1 create vite-react-db
-```
-
-Copy the returned `database_id` into `wrangler.json` → `d1_databases[0].database_id`.
-
-### 2. Apply migrations
-
-```bash
-# Local
 npx wrangler d1 migrations apply vite-react-db --local
-
-# Remote
-npx wrangler d1 migrations apply vite-react-db --remote
-```
-
-### 3. Generate types (recommended)
-
-```bash
-npm run cf-typegen
-```
-
-### 4. Develop
-
-```bash
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+### OAuth setup (optional)
 
-### 5. Deploy
+1. Copy env example:
 
 ```bash
+cp .dev.vars.example .dev.vars
+```
+
+2. **GitHub** → [Developer settings → OAuth Apps](https://github.com/settings/developers)
+
+   - Homepage: `http://localhost:5173`
+   - Callback: `http://localhost:5173/api/auth/oauth/github/callback`
+   - Put Client ID / Secret in `.dev.vars`
+
+3. **Google** → [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+
+   - Create OAuth 2.0 Client (Web)
+   - Authorized redirect: `http://localhost:5173/api/auth/oauth/google/callback`
+   - Put Client ID / Secret in `.dev.vars`
+
+4. Restart `npm run dev`. OAuth buttons appear when credentials are set.
+
+### Production secrets
+
+```bash
+npx wrangler secret put GITHUB_CLIENT_ID
+npx wrangler secret put GITHUB_CLIENT_SECRET
+npx wrangler secret put GOOGLE_CLIENT_ID
+npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put OAUTH_STATE_SECRET
+```
+
+Set `APP_URL` in `wrangler.json` `vars` to your production origin (e.g. `https://your-worker.workers.dev`).
+
+Update OAuth app callback URLs to match production.
+
+```bash
+npx wrangler d1 migrations apply vite-react-db --remote
 npm run build && npm run deploy
 ```
 
@@ -62,46 +62,32 @@ npm run build && npm run deploy
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/auth/register` | No | `{ email, password }` → `{ user, token }` |
-| `POST` | `/api/auth/login` | No | `{ email, password }` → `{ user, token }` |
+| `POST` | `/api/auth/register` | No | Email/password signup |
+| `POST` | `/api/auth/login` | No | Email/password login |
 | `POST` | `/api/auth/logout` | Yes | Invalidate session |
 | `GET` | `/api/auth/me` | Yes | Current user |
+| `GET` | `/api/auth/oauth/:provider` | No | Start OAuth (`github` \| `google`) |
+| `GET` | `/api/auth/oauth/:provider/callback` | No | OAuth callback |
 
-Send the token as:
+OAuth success redirects to `/?auth_token=...`. Errors to `/?auth_error=...`.
 
-```
-Authorization: Bearer <token>
-```
+## Notes API
 
-## Notes API (all require auth)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/notes` | List your notes |
-| `GET` | `/api/notes/:id` | Get one note |
-| `POST` | `/api/notes` | Create note |
-| `PUT` | `/api/notes/:id` | Update note |
-| `DELETE` | `/api/notes/:id` | Delete note |
-
-## Auth middleware
-
-Defined in `src/worker/auth.ts`:
-
-- **`requireAuth`** — returns `401` if missing/invalid/expired Bearer token; sets `c.get("user")`
-- **`optionalAuth`** — sets user when token is valid, otherwise continues
-- Passwords hashed with **PBKDF2-SHA256** (100k iterations) via Web Crypto (no extra deps)
-- Sessions stored in D1 (`sessions` table), 30-day TTL
+All require `Authorization: Bearer <token>` and are scoped to the current user.
 
 ## Project structure
 
 ```
 ├── migrations/
-│   ├── 0001_init.sql       # notes table
-│   └── 0002_auth.sql       # users, sessions, notes.user_id
+│   ├── 0001_init.sql
+│   ├── 0002_auth.sql
+│   └── 0003_oauth.sql
 ├── src/
-│   ├── react-app/          # Login UI + notes UI
+│   ├── react-app/
 │   └── worker/
-│       ├── auth.ts         # hashing, sessions, middleware
-│       └── index.ts        # Hono routes
+│       ├── auth.ts      # sessions + requireAuth
+│       ├── oauth.ts     # GitHub / Google flows
+│       └── index.ts
+├── .dev.vars.example
 └── wrangler.json
 ```

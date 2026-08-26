@@ -29,6 +29,10 @@ function App() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [authLoading, setAuthLoading] = useState(false);
+	const [oauthAvailable, setOauthAvailable] = useState<{ github: boolean; google: boolean }>({
+		github: false,
+		google: false,
+	});
 
 	const [notes, setNotes] = useState<Note[]>([]);
 	const [title, setTitle] = useState("");
@@ -43,6 +47,34 @@ function App() {
 		if (t) localStorage.setItem(TOKEN_KEY, t);
 		else localStorage.removeItem(TOKEN_KEY);
 	};
+
+	// Capture OAuth redirect (?auth_token= / ?auth_error=)
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search);
+		const authToken = params.get("auth_token");
+		const authError = params.get("auth_error");
+		if (authToken) {
+			persistToken(authToken);
+			window.history.replaceState({}, "", window.location.pathname);
+		}
+		if (authError) {
+			setError(`OAuth error: ${authError}`);
+			window.history.replaceState({}, "", window.location.pathname);
+		}
+	}, []);
+
+	// Which OAuth providers are configured
+	useEffect(() => {
+		void fetch("/api/")
+			.then((r) => r.json())
+			.then((data: { oauth?: { github?: boolean; google?: boolean } }) => {
+				setOauthAvailable({
+					github: Boolean(data.oauth?.github),
+					google: Boolean(data.oauth?.google),
+				});
+			})
+			.catch(() => null);
+	}, []);
 
 	// Restore session on load
 	useEffect(() => {
@@ -194,6 +226,24 @@ function App() {
 					<h1>Notes + D1</h1>
 					<p className="subtitle">Sign in to manage your notes</p>
 				</header>
+
+				{(oauthAvailable.github || oauthAvailable.google) && (
+					<section className="panel">
+						<h2>Continue with</h2>
+						<div className="oauth-row">
+							{oauthAvailable.github && (
+								<a className="oauth-btn github" href="/api/auth/oauth/github">
+									GitHub
+								</a>
+							)}
+							{oauthAvailable.google && (
+								<a className="oauth-btn google" href="/api/auth/oauth/google">
+									Google
+								</a>
+							)}
+						</div>
+					</section>
+				)}
 
 				<section className="panel">
 					<div className="panel-header">

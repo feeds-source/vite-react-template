@@ -143,6 +143,42 @@ button.danger:hover:not(:disabled) {
 	background: #2a1515;
 }
 
+.oauth-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+.oauth-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.55rem 1.1rem;
+	border-radius: 8px;
+	font-weight: 600;
+	text-decoration: none;
+	color: #fff;
+	border: 1px solid transparent;
+}
+
+.oauth-btn.github {
+	background: #24292f;
+}
+
+.oauth-btn.github:hover {
+	background: #32383f;
+}
+
+.oauth-btn.google {
+	background: #fff;
+	color: #1f1f1f;
+	border-color: #2a2f3a;
+}
+
+.oauth-btn.google:hover {
+	background: #f3f4f6;
+}
+
 .error {
 	background: #2a1515;
 	border: 1px solid #5c2b2b;

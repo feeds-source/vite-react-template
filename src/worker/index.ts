@@ -8,6 +8,7 @@ import {
 	requireAuth,
 	verifyPassword,
 } from "./auth";
+import { buildAuthorizeUrl, handleOAuthCallback, type OAuthProvider } from "./oauth";
 
 type Note = {
 	id: number;
@@ -23,7 +24,17 @@ const app = new Hono<AppEnv>();
 app.use("/api/*", cors());
 
 // Health
-app.get("/api/", (c) => c.json({ name: "Cloudflare", d1: true, auth: true }));
+app.get("/api/", (c) =>
+	c.json({
+		name: "Cloudflare",
+		d1: true,
+		auth: true,
+		oauth: {
+			github: Boolean(c.env.GITHUB_CLIENT_ID),
+			google: Boolean(c.env.GOOGLE_CLIENT_ID),
+		},
+	}),
+);
 
 // ─── Auth routes (public) ───────────────────────────────────────────
 
@@ -75,9 +86,9 @@ app.post("/api/auth/login", async (c) => {
 
 	const user = await c.env.DB.prepare("SELECT id, email, password_hash FROM users WHERE email = ?")
 		.bind(email)
-		.first<{ id: number; email: string; password_hash: string }>();
+		.first<{ id: number; email: string; password_hash: string | null }>();
 
-	if (!user || !(await verifyPassword(password, user.password_hash))) {
+	if (!user?.password_hash || !(await verifyPassword(password, user.password_hash))) {
 		return c.json({ error: "invalid email or password" }, 401);
 	}
 
@@ -96,6 +107,26 @@ app.post("/api/auth/logout", requireAuth, async (c) => {
 
 app.get("/api/auth/me", requireAuth, (c) => {
 	return c.json({ user: c.get("user") });
+});
+
+// ─── OAuth ──────────────────────────────────────────────────────────
+
+const OAUTH_PROVIDERS = new Set<OAuthProvider>(["github", "google"]);
+
+app.get("/api/auth/oauth/:provider", async (c) => {
+	const provider = c.req.param("provider") as OAuthProvider;
+	if (!OAUTH_PROVIDERS.has(provider)) {
+		return c.json({ error: "Unsupported provider" }, 404);
+	}
+	return buildAuthorizeUrl(c, provider);
+});
+
+app.get("/api/auth/oauth/:provider/callback", async (c) => {
+	const provider = c.req.param("provider") as OAuthProvider;
+	if (!OAUTH_PROVIDERS.has(provider)) {
+		return c.json({ error: "Unsupported provider" }, 404);
+	}
+	return handleOAuthCallback(c, provider);
 });
 
 // ─── Notes (all require auth, scoped to user) ───────────────────────

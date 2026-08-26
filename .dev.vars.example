@@ -1,0 +1,15 @@
+# Copy to .dev.vars for local development (never commit .dev.vars)
+#
+# GitHub OAuth App: https://github.com/settings/developers
+#   Homepage URL: http://localhost:5173
+#   Authorization callback URL: http://localhost:5173/api/auth/oauth/github/callback
+#
+# Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client
+#   Authorized redirect URI: http://localhost:5173/api/auth/oauth/google/callback
+
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+OAUTH_STATE_SECRET=change-me-to-a-long-random-string
+APP_URL=http://localhost:5173
