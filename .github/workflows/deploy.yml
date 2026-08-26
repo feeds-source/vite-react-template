@@ -83,7 +83,7 @@ jobs:
     timeout-minutes: 15
     environment:
       name: production
-      url: https://vite-react-template.unruly-bounce.workers.dev
+      url: https://vite-react-template.limefashion52.workers.dev
     steps:
       - name: Check out
         uses: actions/checkout@v4

@@ -4,19 +4,13 @@ Full-stack notes app with **D1**, **email/password auth**, and **GitHub + Google
 
 ## Live on Cloudflare
 
-**App:** [https://vite-react-template.unruly-bounce.workers.dev](https://vite-react-template.unruly-bounce.workers.dev)
+**App:** [https://vite-react-template.limefashion52.workers.dev](https://vite-react-template.limefashion52.workers.dev)
 
-This is a **temporary preview account** so the site is public immediately. **Claim it within 60 minutes** or Cloudflare deletes the account and the URL goes away:
+GitHub Actions deploys this URL on every push to `main`. The storefront is live. **D1 is not bound yet** — the API token needs **Account → D1 Edit**. Recreate the token with that permission, update `CLOUDFLARE_API_TOKEN`, and re-run **Actions → Deploy to Cloudflare** to create `vite-react-db` and enable notes/auth.
 
-**[Claim this deployment](https://dash.cloudflare.com/claim-preview?claimToken=GsXRRi8uIRdDljTuGYgQjOrUT0X7ZZnK5x9x9qoZl68)**
+Optional: [claim the temporary preview](https://dash.cloudflare.com/claim-preview?claimToken=GsXRRi8uIRdDljTuGYgQjOrUT0X7ZZnK5x9x9qoZl68) if you still want those resources merged in (expires about an hour after it was issued).
 
-1. Open the claim link, sign in (or create a Cloudflare account), and finish the prompts.
-2. After claiming, add **one** GitHub Actions secret on this repo (**Settings → Secrets and variables → Actions**):
-   - `CLOUDFLARE_API_TOKEN` — [Create token](https://dash.cloudflare.com/profile/api-tokens) using **Edit Cloudflare Workers**, and include **D1 Edit**
-3. Optional: `CLOUDFLARE_ACCOUNT_ID` only if that token can access more than one account. Otherwise Wrangler uses the token's account (and creates `vite-react-db` there if needed).
-4. Re-run **Actions → Deploy to Cloudflare**, or push to `main`.
-
-D1 database `vite-react-db` is created and migrations are applied. Set OAuth worker secrets after claiming if you want GitHub/Google sign-in in production.
+OAuth worker secrets (`GITHUB_CLIENT_ID`, etc.) are still unset.
 
 ## Automated deploys
 
@@ -27,11 +21,9 @@ D1 database `vite-react-db` is created and migrations are applied. Set OAuth wor
 | Push to `main` / Run workflow | `npm ci` → ensure D1 → `npm run build` → D1 migrations (`--remote`) → `wrangler deploy` |
 | Pull request | Same build, then `wrangler versions upload` (preview URL, not production) |
 
-Uses `cloudflare/wrangler-action@v4` with Wrangler **4.126.0**. GitHub Environments `production` and `preview` exist (no protection rules). Until `CLOUDFLARE_API_TOKEN` is set, deploy steps are skipped with a warning so the workflow stays valid.
+Uses `cloudflare/wrangler-action@v4` with Wrangler **4.126.0**. Secret: `CLOUDFLARE_API_TOKEN` (Workers Edit + **D1 Edit**). Optional: `CLOUDFLARE_ACCOUNT_ID` if the token can access more than one account.
 
 If you also connect **Workers Builds** in the Cloudflare dashboard, pick **either** that **or** this Actions workflow — not both — or every push will deploy twice.
-
-Do **not** enable GitHub Actions “secrets in `if:`” checks; GitHub rejects that (`Unrecognized named-value: 'secrets'`), which is why the first deploy workflow file failed to start.
 
 ## Features
 
