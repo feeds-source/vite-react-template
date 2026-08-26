@@ -1,4 +1,3 @@
-import type { Context, Next } from "hono";
 import type { MiddlewareHandler } from "hono";
 
 export type AuthUser = {
