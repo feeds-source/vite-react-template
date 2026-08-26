@@ -8,7 +8,7 @@ type Note = { id: number; title: string; content: string };
 type CartLine = { product: Product; qty: number };
 
 const TOKEN_KEY = "femme_token";
-const CATEGORIES = ["All", "Bras", "Panties", "Lingerie", "Shapewear", "Sleepwear", "Loungewear"] as const;
+const CATEGORIES = ["All", "Bras", "Panties", "Lingerie", "Shapewear", "Sleepwear", "Loungewear", "Thermal"] as const;
 const PRODUCTS: Product[] = [
   { id: "everyday-soft-bra", name: "Everyday Soft Cup Bra", category: "Bras", price: 42, compareAt: 52, description: "Wireless everyday bra with soft-stretch band.", tag: "Best seller", accent: "#6e1a48" },
   { id: "ultimate-tshirt-bra", name: "Ultimate T-Shirt Bra", category: "Bras", price: 48, description: "Smooth molded cups under knits.", tag: "New", accent: "#3d1a5c" },
@@ -22,15 +22,39 @@ const PRODUCTS: Product[] = [
   { id: "satin-night-set", name: "Satin Night Cami Set", category: "Sleepwear", price: 64, description: "Cool-touch satin cami and shorts.", tag: "Night", accent: "#b04a1a" },
   { id: "cloud-robe", name: "Cloud Knit Robe", category: "Loungewear", price: 72, description: "Mid-weight robe with self-tie belt.", accent: "#1a3a58" },
   { id: "lounge-wide-pant", name: "Wide-Leg Lounge Pant", category: "Loungewear", price: 58, description: "Relaxed drawstring modal pant.", accent: "#4a1840" },
+  { id: "thermal-set", name: "Soft Thermal Set", category: "Thermal", price: 68, description: "Warm layer set for cooler nights.", tag: "Warm", accent: "#1a3a58" },
 ];
-const TICKER = ["Silk from dusk till dawn", "Jewel tones · gold thread · atelier cut", "Free shipping over $100"];
+const TICKER = ["Free Shipping Over $100+", "10% OFF on Selective New items", "COD available on all orders"];
+const SLIDES = [
+  { kicker: "Your First Fit Should Be the Right One", title: "The Ultimate Bra Style Guide for Every Outfit", lede: "Comfortable, gentle innerwear", cat: "Bras" as const },
+  { kicker: "Find Your Fit, Feel the Difference", title: "Everyday Bras & Undies That Move with You", lede: "Soft, breathable styles for real life", cat: "Panties" as const },
+];
+const LOOKBOOK = [
+  { name: "Bras", price: "$119.99" },
+  { name: "Lingerie", price: "$139.99" },
+  { name: "Shapewear", price: "$179.99" },
+  { name: "Panties", price: "$109.99" },
+  { name: "Sleepwear", price: "$99.99" },
+];
+const QUOTES = [
+  { title: "Real Comfort, Finally!", who: "Emily R., London, UK" },
+  { title: "My Go-To Brand, Always", who: "Sophie L., New York, USA" },
+  { title: "Perfect for Every Curve", who: "Isabella M., Melbourne, Australia" },
+  { title: "Fast Delivery & Beautiful Packaging", who: "Layla A., Dubai, UAE" },
+  { title: "Comfortable Fit & Great Support", who: "Noor S., Abu Dhabi, UAE" },
+];
+const SERVICES = [
+  { title: "Free & Fast Delivery", text: "Complimentary shipping on qualifying orders." },
+  { title: "24/7 Online Support", text: "Write us anytime. Real people, real answers." },
+  { title: "30-Day Easy Returns", text: "Exchange or return within 30 days." },
+];
 const COLLECTIONS = [
   { name: "Bras", accent: "linear-gradient(160deg,#8a2458,#1a0810)" },
   { name: "Panties", accent: "linear-gradient(160deg,#3d1a5c,#100814)" },
   { name: "Lingerie", accent: "linear-gradient(160deg,#b04a1a,#1a0c08)" },
   { name: "Shapewear", accent: "linear-gradient(160deg,#1f5a4a,#081410)" },
   { name: "Sleepwear", accent: "linear-gradient(160deg,#9b1f5a,#140810)" },
-  { name: "Loungewear", accent: "linear-gradient(160deg,#1a3a58,#080c14)" },
+  { name: "Thermal", accent: "linear-gradient(160deg,#1a3a58,#080c14)" },
 ];
 
 async function api<T>(path: string, opts: RequestInit & { token?: string | null } = {}) {
@@ -64,6 +88,7 @@ function App() {
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartTotal = cart.reduce((n, l) => n + l.product.price * l.qty, 0);
   const filtered = useMemo(() => (category === "All" ? PRODUCTS : PRODUCTS.filter((p) => p.category === category)), [category]);
+  const slide = SLIDES[hero] ?? SLIDES[0];
 
   const refreshMe = useCallback(async (t: string | null) => {
     if (!t) { setUser(null); setNotes([]); return; }
@@ -155,7 +180,7 @@ function App() {
   const footer = (
     <footer className="foot">
       <div className="foot-grid">
-        <div><p className="foot-brand">FEMME</p><p className="muted">Exotic silk, jewel nights, and a single atelier on Cloudflare.</p></div>
+        <div><p className="foot-brand">FEMME</p><p className="muted">Comfort, confidence and care — on Cloudflare.</p></div>
         <div><h3>Shop</h3>{CATEGORIES.filter((c) => c !== "All").map((c) => <button key={c} type="button" onClick={() => goShop(c)}>{c}</button>)}</div>
         <div><h3>Account</h3><button type="button" onClick={() => setView(user ? "account" : "login")}>{user ? "My account" : "Sign in"}</button><button type="button" onClick={() => setView("contact")}>Contact</button></div>
         <div><h3>Store</h3><p className="muted">info@silkmoments.com</p></div>
@@ -170,7 +195,7 @@ function App() {
     const isLogin = view === "login";
     return shell(
       <main className="page auth-page">
-        <p className="eyebrow">{isLogin ? "Welcome back" : "Join the atelier"}</p>
+        <p className="eyebrow">{isLogin ? "Welcome back" : "Join Femme"}</p>
         <h1 className="page-title">{isLogin ? "Sign in" : "Create account"}</h1>
         <form className="contact-form auth-form" onSubmit={(e) => { e.preventDefault(); void handleAuth(isLogin ? "login" : "register"); }}>
           <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
@@ -253,7 +278,13 @@ function App() {
   }
 
   if (view === "about") {
-    return shell(<main className="page about"><p className="eyebrow">The house</p><h1 className="page-title">Silk cut for night cities</h1><p className="lede">Femme is an exotic lingerie atelier: plum nights, gold thread, emerald mesh. The store, account, and bag live on one Cloudflare app.</p></main>);
+    return shell(
+      <main className="page about">
+        <p className="eyebrow">About us</p>
+        <h1 className="page-title">Femme — redefining comfort, confidence & care</h1>
+        <p className="lede">At Femme, true beauty begins with self-love. Built for women, by women — inspired by real lives. Join the movement. Celebrate you — bold, beautiful, and unapologetically Femme.</p>
+      </main>
+    );
   }
 
   if (view === "contact") {
@@ -286,24 +317,51 @@ function App() {
   return shell(
     <>
       <section className="hero">
-        <div className="hero-slide" style={{ background: "linear-gradient(115deg, rgba(155,31,90,0.35), rgba(26,58,88,0.2) 40%, transparent 70%)" }}>
-          <p className="eyebrow light">After-dark silk · jewel cut</p>
-          <h1>Worn like a secret<br />in a night market</h1>
-          <button type="button" className="cta" onClick={() => goShop("Lingerie")}>Enter the atelier</button>
-          <div className="hero-dots"><button type="button" className={hero === 0 ? "on" : ""} onClick={() => setHero(0)} /><button type="button" className={hero === 1 ? "on" : ""} onClick={() => setHero(1)} /></div>
+        <div className="hero-slide" style={{ background: "linear-gradient(115deg, rgba(155,31,90,0.38), rgba(26,58,88,0.22) 42%, transparent 72%)" }}>
+          <p className="eyebrow light">{slide.kicker}</p>
+          <h1>{slide.title}</h1>
+          <p className="lede light">{slide.lede}</p>
+          <button type="button" className="cta" onClick={() => goShop(slide.cat)}>Shop now</button>
+          <div className="hero-dots">{SLIDES.map((_, i) => <button key={i} type="button" className={hero === i ? "on" : ""} onClick={() => setHero(i)} />)}</div>
         </div>
       </section>
       <section className="page">
         <div className="catalog-head"><h2>Shop by collection</h2></div>
         <div className="collections">{COLLECTIONS.map((c) => <button key={c.name} type="button" className="col-card" style={{ background: c.accent }} onClick={() => goShop(c.name as (typeof CATEGORIES)[number])}><span>{c.name}</span></button>)}</div>
       </section>
+      <section className="page split-banner">
+        <p className="eyebrow">New collection</p>
+        <h2>Support that moves with you</h2>
+        <p className="lede">Find the perfect bra for every mood, move, and moment.</p>
+        <button type="button" className="cta" onClick={() => goShop("Bras")}>Shop now</button>
+      </section>
       <section className="page">
-        <div className="catalog-head"><h2>House favorites</h2><button type="button" className="text-link" onClick={() => goShop()}>View all</button></div>
+        <div className="catalog-head"><h2>Shop best collection</h2><button type="button" className="text-link" onClick={() => goShop()}>View all</button></div>
         <div className="grid">{PRODUCTS.slice(0, 8).map((p) => (
           <article key={p.id} className="card"><button type="button" className="card-hit" onClick={() => openProduct(p)}>
             <div className="card-visual" style={{ background: `linear-gradient(160deg, ${p.accent}, #0b0610)` }}><span className="card-initial">{p.name.charAt(0)}</span></div>
             <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">${p.price}</p></div>
           </button></article>
+        ))}</div>
+      </section>
+      <section className="page">
+        <div className="catalog-head"><h2>Start from</h2></div>
+        <div className="lookbook">{LOOKBOOK.map((l) => (
+          <button key={l.name} type="button" className="look-card" onClick={() => goShop(l.name as (typeof CATEGORIES)[number])}>
+            <span className="card-cat">{l.name}</span>
+            <strong>{l.price}</strong>
+          </button>
+        ))}</div>
+      </section>
+      <section className="page quotes">
+        <div className="catalog-head"><h2>What our clients say</h2></div>
+        <div className="quote-grid">{QUOTES.map((q) => (
+          <blockquote key={q.who} className="quote"><p>{q.title}</p><cite>{q.who}</cite></blockquote>
+        ))}</div>
+      </section>
+      <section className="page">
+        <div className="service-row">{SERVICES.map((s) => (
+          <article key={s.title} className="service"><h3>{s.title}</h3><p className="muted">{s.text}</p></article>
         ))}</div>
       </section>
     </>
