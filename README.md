@@ -1,90 +1,101 @@
-# React + Vite + Hono + Cloudflare Workers
+# React + Vite + Hono + Cloudflare Workers + D1
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/vite-react-template)
+Full-stack template with **Cloudflare D1** (SQLite) integrated.
 
-This template provides a minimal setup for building a React application with TypeScript and Vite, designed to run on Cloudflare Workers. It features hot module replacement, ESLint integration, and the flexibility of Workers deployments.
+- **Frontend**: React 19 + Vite
+- **Backend**: Hono on Cloudflare Workers
+- **Database**: Cloudflare D1 (`notes` table)
 
-![React + TypeScript + Vite + Cloudflare Workers](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/fc7b4b62-442b-4769-641b-ad4422d74300/public)
+## Features
 
-<!-- dash-content-start -->
+- CRUD API for notes (`/api/notes`)
+- React UI to create, list, and delete notes
+- Local D1 via Wrangler + migrations
 
-🚀 Supercharge your web development with this powerful stack:
-
-- [**React**](https://react.dev/) - A modern UI library for building interactive interfaces
-- [**Vite**](https://vite.dev/) - Lightning-fast build tooling and development server
-- [**Hono**](https://hono.dev/) - Ultralight, modern backend framework
-- [**Cloudflare Workers**](https://developers.cloudflare.com/workers/) - Edge computing platform for global deployment
-
-### ✨ Key Features
-
-- 🔥 Hot Module Replacement (HMR) for rapid development
-- 📦 TypeScript support out of the box
-- 🛠️ ESLint configuration included
-- ⚡ Zero-config deployment to Cloudflare's global network
-- 🎯 API routes with Hono's elegant routing
-- 🔄 Full-stack development setup
-- 🔎 Built-in Observability to monitor your Worker
-
-Get started in minutes with local development or deploy directly via the Cloudflare dashboard. Perfect for building modern, performant web applications at the edge.
-
-<!-- dash-content-end -->
-
-## Getting Started
-
-To start a new project with this template, run:
-
-```bash
-npm create cloudflare@latest -- --template=cloudflare/templates/vite-react-template
-```
-
-A live deployment of this template is available at:
-[https://react-vite-template.templates.workers.dev](https://react-vite-template.templates.workers.dev)
-
-## Development
-
-Install dependencies:
+## Quick start
 
 ```bash
 npm install
 ```
 
-Start the development server with:
+### 1. Create the D1 database (one-time, for production)
+
+```bash
+npx wrangler d1 create vite-react-db
+```
+
+Copy the returned `database_id` into `wrangler.json` → `d1_databases[0].database_id`.
+
+> For **local dev**, Wrangler uses a local SQLite file automatically. The placeholder `database_id` is fine until you deploy.
+
+### 2. Apply migrations
+
+Local:
+
+```bash
+npx wrangler d1 migrations apply vite-react-db --local
+```
+
+Remote (production):
+
+```bash
+npx wrangler d1 migrations apply vite-react-db --remote
+```
+
+### 3. Generate types (optional but recommended)
+
+```bash
+npm run cf-typegen
+```
+
+This updates `worker-configuration.d.ts` so `c.env.DB` is typed.
+
+### 4. Develop
 
 ```bash
 npm run dev
 ```
 
-Your application will be available at [http://localhost:5173](http://localhost:5173).
+Open [http://localhost:5173](http://localhost:5173).
 
-## Production
-
-Build your project for production:
-
-```bash
-npm run build
-```
-
-Preview your build locally:
-
-```bash
-npm run preview
-```
-
-Deploy your project to Cloudflare Workers:
+### 5. Deploy
 
 ```bash
 npm run build && npm run deploy
 ```
 
-Monitor your workers:
+Make sure migrations are applied remotely before or after the first deploy.
 
-```bash
-npx wrangler tail
+## API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/` | Health check |
+| `GET` | `/api/notes` | List notes |
+| `GET` | `/api/notes/:id` | Get one note |
+| `POST` | `/api/notes` | Create note `{ title, content? }` |
+| `PUT` | `/api/notes/:id` | Update note |
+| `DELETE` | `/api/notes/:id` | Delete note |
+
+## Project structure
+
+```
+├── migrations/
+│   └── 0001_init.sql      # D1 schema
+├── src/
+│   ├── react-app/         # React UI
+│   └── worker/
+│       └── index.ts       # Hono + D1 API
+├── wrangler.json          # Workers + D1 binding
+└── package.json
 ```
 
-## Additional Resources
+## Useful commands
 
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Vite Documentation](https://vitejs.dev/guide/)
-- [React Documentation](https://reactjs.org/)
-- [Hono Documentation](https://hono.dev/)
+| Command | Action |
+|---------|--------|
+| `npm run dev` | Local dev (Vite + Workers + local D1) |
+| `npm run build` | Production build |
+| `npm run deploy` | Deploy Worker |
+| `npm run cf-typegen` | Regenerate Worker/D1 types |
+| `npx wrangler d1 migrations apply vite-react-db --local` | Apply migrations locally |
