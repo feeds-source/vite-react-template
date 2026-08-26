@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
 function wrangler(args) {
@@ -22,6 +22,11 @@ function loadConfig() {
 
 function saveConfig(cfg) {
   writeFileSync("wrangler.json", `${JSON.stringify(cfg, null, 2)}\n`);
+}
+
+function setOutput(name, value) {
+  if (!process.env.GITHUB_OUTPUT) return;
+  appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
 }
 
 const who = wrangler(["whoami"]);
@@ -61,6 +66,7 @@ try {
   }
   cfg.d1_databases[0].database_id = id;
   saveConfig(cfg);
+  setOutput("d1", "true");
   console.log(`Pinned database_id ${id} in wrangler.json`);
 } catch (err) {
   const output = err.output || err.message || String(err);
@@ -70,4 +76,5 @@ try {
   );
   delete cfg.d1_databases;
   saveConfig(cfg);
+  setOutput("d1", "false");
 }
