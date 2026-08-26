@@ -19,7 +19,7 @@
     {
       "binding": "DB",
       "database_name": "vite-react-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "0e2f9300-7343-4825-9e90-cb525bcba172",
       "migrations_dir": "migrations"
     }
   ],
