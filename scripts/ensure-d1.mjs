@@ -2,6 +2,8 @@
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function wrangler(args) {
   const result = spawnSync("npx", ["wrangler", ...args], {
     encoding: "utf8",
@@ -29,6 +31,27 @@ function setOutput(name, value) {
   appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
 }
 
+function pin(cfg, id) {
+  if (!cfg.d1_databases?.[0]) {
+    cfg.d1_databases = [
+      {
+        binding: "DB",
+        database_name: "vite-react-db",
+        database_id: id,
+        migrations_dir: "migrations",
+      },
+    ];
+  } else {
+    cfg.d1_databases[0].database_name = "vite-react-db";
+    cfg.d1_databases[0].database_id = id;
+    cfg.d1_databases[0].binding = cfg.d1_databases[0].binding || "DB";
+    cfg.d1_databases[0].migrations_dir = cfg.d1_databases[0].migrations_dir || "migrations";
+  }
+  saveConfig(cfg);
+  setOutput("d1", "true");
+  console.log(`Connected D1 vite-react-db (${id}) in wrangler.json`);
+}
+
 const who = wrangler(["whoami"]);
 console.log(who);
 const accountMatch = who.match(/\b([0-9a-f]{32})\b/);
@@ -36,6 +59,11 @@ const cfg = loadConfig();
 if (accountMatch) {
   cfg.account_id = accountMatch[1];
   console.log(`Using Cloudflare account ${cfg.account_id}`);
+}
+
+const provided = (process.env.D1_DATABASE_ID || "").trim();
+if (provided && !UUID.test(provided)) {
+  throw new Error(`D1_DATABASE_ID is not a UUID: ${provided}`);
 }
 
 try {
@@ -46,7 +74,7 @@ try {
   }
   const rows = JSON.parse(listRaw.slice(jsonStart));
   const existing = rows.find((row) => row.name === "vite-react-db");
-  let id = existing?.uuid || existing?.id;
+  let id = existing?.uuid || existing?.id || (UUID.test(provided) ? provided : "");
 
   if (!id) {
     console.log("Creating D1 database vite-react-db");
@@ -61,20 +89,21 @@ try {
     console.log(`Using existing D1 vite-react-db ${id}`);
   }
 
-  if (!cfg.d1_databases?.[0]) {
-    throw new Error("wrangler.json missing d1_databases[0]");
-  }
-  cfg.d1_databases[0].database_id = id;
-  saveConfig(cfg);
-  setOutput("d1", "true");
-  console.log(`Pinned database_id ${id} in wrangler.json`);
+  pin(cfg, id);
 } catch (err) {
   const output = err.output || err.message || String(err);
   console.log(output);
-  console.warn(
-    "::warning::D1 is not permitted on CLOUDFLARE_API_TOKEN. Deploying the Worker without a D1 binding. Recreate the token with Account → D1 Edit, then re-run.",
-  );
-  delete cfg.d1_databases;
-  saveConfig(cfg);
-  setOutput("d1", "false");
+  if (provided && UUID.test(provided)) {
+    console.warn(
+      "::warning::D1 list failed; using D1_DATABASE_ID from GitHub to bind vite-react-db.",
+    );
+    pin(cfg, provided);
+  } else {
+    console.warn(
+      "::warning::Cannot connect vite-react-db. Add GitHub secret D1_DATABASE_ID (the UUID from Cloudflare D1) and give CLOUDFLARE_API_TOKEN Account → D1 Edit.",
+    );
+    delete cfg.d1_databases;
+    saveConfig(cfg);
+    setOutput("d1", "false");
+  }
 }

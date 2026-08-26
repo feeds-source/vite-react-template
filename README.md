@@ -6,7 +6,15 @@ Full-stack notes app with **D1**, **email/password auth**, and **GitHub + Google
 
 **App:** [https://vite-react-template.limefashion52.workers.dev](https://vite-react-template.limefashion52.workers.dev)
 
-GitHub Actions deploys this URL on every push to `main`. The storefront is live. **D1 is not bound yet** — the API token needs **Account → D1 Edit**. Recreate the token with that permission, update `CLOUDFLARE_API_TOKEN`, and re-run **Actions → Deploy to Cloudflare** to create `vite-react-db` and enable notes/auth.
+GitHub Actions deploys this URL on every push to `main`. The storefront is live. **D1 is not bound yet** — connect `vite-react-db` in GitHub:
+
+1. Cloudflare dashboard → **Workers & Pages** → **D1** → **vite-react-db** → copy **Database ID** (UUID)
+2. GitHub repo → **Settings → Secrets and variables → Actions** → add:
+   - `CLOUDFLARE_API_TOKEN` — Workers Scripts **Edit** + **D1 Edit** on account `1e611220afd75688b509ba299e98bde7`
+   - `D1_DATABASE_ID` — that UUID
+3. Re-run **Actions → Deploy to Cloudflare** (optional input: `d1_database_id`)
+
+The workflow writes the ID into `wrangler.json`, applies migrations, and deploys with the `DB` binding.
 
 Optional: [claim the temporary preview](https://dash.cloudflare.com/claim-preview?claimToken=GsXRRi8uIRdDljTuGYgQjOrUT0X7ZZnK5x9x9qoZl68) if you still want those resources merged in (expires about an hour after it was issued).
 
