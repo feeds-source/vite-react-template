@@ -12,32 +12,29 @@ const TOKEN_KEY = "femme_token";
 const WISH_KEY = "femme_wish";
 const FX_KEY = "femme_fx";
 const CATEGORIES = ["All", "Bras", "Panties", "Lingerie", "Shapewear", "Sleepwear", "Loungewear", "Thermal"] as const;
-const FX: Record<Currency, { symbol: string; rate: number; label: string }> = {
-  USD: { symbol: "$", rate: 1, label: "USD" },
-  EUR: { symbol: "€", rate: 0.92, label: "EUR" },
-  GBP: { symbol: "£", rate: 0.78, label: "GBP" },
-  AED: { symbol: "AED ", rate: 3.67, label: "AED" },
-  PKR: { symbol: "Rs ", rate: 278, label: "PKR" },
+const FX: Record<Currency, { symbol: string; rate: number }> = {
+  USD: { symbol: "$", rate: 1 }, EUR: { symbol: "€", rate: 0.92 }, GBP: { symbol: "£", rate: 0.78 }, AED: { symbol: "AED ", rate: 3.67 }, PKR: { symbol: "Rs ", rate: 278 },
 };
+const photo = (id: string, w = 640) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=60`;
 const PRODUCTS: Product[] = [
-  { id: "everyday-soft-bra", name: "Everyday Soft Cup Bra", category: "Bras", price: 42, compareAt: 52, description: "Wireless everyday bra with soft-stretch band.", tag: "Best seller", accent: "#6e1a48", image: "https://images.unsplash.com/photo-1563903530906-a27d02885ed3?auto=format&fit=crop&w=900&q=80" },
-  { id: "ultimate-tshirt-bra", name: "Ultimate T-Shirt Bra", category: "Bras", price: 48, description: "Smooth molded cups under knits.", tag: "New", accent: "#3d1a5c", image: "https://images.unsplash.com/photo-1617551307538-25c64739bca5?auto=format&fit=crop&w=900&q=80" },
-  { id: "first-fit-teen-bra", name: "First Fit Bralette", category: "Bras", price: 28, description: "Gentle fit for growing teens.", tag: "Teen", accent: "#1f5a4a", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80" },
-  { id: "daily-hipster", name: "Daily Hipster Brief", category: "Panties", price: 16, description: "Breathable mid-rise brief.", accent: "#8a2a1e", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=80" },
-  { id: "seamless-thong", name: "Seamless Soft Thong", category: "Panties", price: 14, description: "Nearly invisible under clothes.", accent: "#2a1848", image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80" },
-  { id: "lace-balconette-set", name: "Lace Balconette Set", category: "Lingerie", price: 78, compareAt: 96, description: "Matching balconette and brief in midnight lace.", tag: "Set", accent: "#9b1f5a", image: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=900&q=80" },
-  { id: "mesh-bodysuit", name: "Mesh Contour Bodysuit", category: "Lingerie", price: 88, description: "Sculpting mesh with snap closures.", accent: "#154038", image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=80" },
-  { id: "high-waist-shaper", name: "High-Waist Soft Shaper", category: "Shapewear", price: 54, description: "Light control, breathable knit.", tag: "Shape", accent: "#5c1840", image: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=900&q=80" },
-  { id: "slip-short", name: "Everyday Slip Short", category: "Shapewear", price: 36, description: "Anti-chafe shorts with gentle hold.", accent: "#3a2048", image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=900&q=80" },
-  { id: "satin-night-set", name: "Satin Night Cami Set", category: "Sleepwear", price: 64, description: "Cool-touch satin cami and shorts.", tag: "Night", accent: "#b04a1a", image: "https://images.unsplash.com/photo-1617922001439-4a2e6562f328?auto=format&fit=crop&w=900&q=80" },
-  { id: "cloud-robe", name: "Cloud Knit Robe", category: "Loungewear", price: 72, description: "Mid-weight robe with self-tie belt.", accent: "#1a3a58", image: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=900&q=80" },
-  { id: "lounge-wide-pant", name: "Wide-Leg Lounge Pant", category: "Loungewear", price: 58, description: "Relaxed drawstring modal pant.", accent: "#4a1840", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=900&q=80" },
-  { id: "thermal-set", name: "Soft Thermal Set", category: "Thermal", price: 68, description: "Warm layer set for cooler nights.", tag: "Warm", accent: "#1a3a58", image: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=900&q=80" },
+  { id: "everyday-soft-bra", name: "Everyday Soft Cup Bra", category: "Bras", price: 42, compareAt: 52, description: "Wireless everyday bra.", tag: "Best seller", accent: "#6e1a48", image: photo("photo-1515886657613-9f3515b0c78f") },
+  { id: "ultimate-tshirt-bra", name: "Ultimate T-Shirt Bra", category: "Bras", price: 48, description: "Smooth molded cups.", tag: "New", accent: "#3d1a5c", image: photo("photo-1524504388940-b1c1722653e1") },
+  { id: "first-fit-teen-bra", name: "First Fit Bralette", category: "Bras", price: 28, description: "Gentle first-fit bralette.", tag: "Teen", accent: "#1f5a4a", image: photo("photo-1487412720507-e7ab37603c6f") },
+  { id: "daily-hipster", name: "Daily Hipster Brief", category: "Panties", price: 16, description: "Breathable mid-rise brief.", accent: "#8a2a1e", image: photo("photo-1469334031218-e382a71b716b") },
+  { id: "seamless-thong", name: "Seamless Soft Thong", category: "Panties", price: 14, description: "Nearly invisible.", accent: "#2a1848", image: photo("photo-1490481651871-ab68de25d43d") },
+  { id: "lace-balconette-set", name: "Lace Balconette Set", category: "Lingerie", price: 78, compareAt: 96, description: "Midnight lace set.", tag: "Set", accent: "#9b1f5a", image: photo("photo-1515372039744-b8f02a3ae446") },
+  { id: "mesh-bodysuit", name: "Mesh Contour Bodysuit", category: "Lingerie", price: 88, description: "Sculpting mesh.", accent: "#154038", image: photo("photo-1529626455594-4ff0802cfb7e") },
+  { id: "high-waist-shaper", name: "High-Waist Soft Shaper", category: "Shapewear", price: 54, description: "Light control.", tag: "Shape", accent: "#5c1840", image: photo("photo-1503342217505-b0a15ec3261c") },
+  { id: "slip-short", name: "Everyday Slip Short", category: "Shapewear", price: 36, description: "Anti-chafe shorts.", accent: "#3a2048", image: photo("photo-1483985988355-763728e1935b") },
+  { id: "satin-night-set", name: "Satin Night Cami Set", category: "Sleepwear", price: 64, description: "Cool-touch satin.", tag: "Night", accent: "#b04a1a", image: photo("photo-1515886657613-9f3515b0c78f") },
+  { id: "cloud-robe", name: "Cloud Knit Robe", category: "Loungewear", price: 72, description: "Mid-weight robe.", accent: "#1a3a58", image: photo("photo-1469334031218-e382a71b716b") },
+  { id: "lounge-wide-pant", name: "Wide-Leg Lounge Pant", category: "Loungewear", price: 58, description: "Relaxed modal pant.", accent: "#4a1840", image: photo("photo-1524504388940-b1c1722653e1") },
+  { id: "thermal-set", name: "Soft Thermal Set", category: "Thermal", price: 68, description: "Warm layer set.", tag: "Warm", accent: "#1a3a58", image: photo("photo-1487412720507-e7ab37603c6f") },
 ];
 const TICKER = ["Free Shipping Over $100+", "10% OFF on Selective New items", "COD available on all orders"];
 const SLIDES = [
-  { kicker: "Your First Fit Should Be the Right One", title: "The Ultimate Bra Style Guide for Every Outfit", lede: "Comfortable, gentle innerwear", cat: "Bras" as const },
-  { kicker: "Find Your Fit, Feel the Difference", title: "Everyday Bras & Undies That Move with You", lede: "Soft, breathable styles for real life", cat: "Panties" as const },
+  { kicker: "Your First Fit Should Be the Right One", title: "The Ultimate Bra Style Guide for Every Outfit", lede: "Comfortable, gentle innerwear", cat: "Bras" as const, image: photo("photo-1515886657613-9f3515b0c78f", 1400) },
+  { kicker: "Find Your Fit, Feel the Difference", title: "Everyday Bras & Undies That Move with You", lede: "Soft, breathable styles for real life", cat: "Panties" as const, image: photo("photo-1469334031218-e382a71b716b", 1400) },
 ];
 const LOOKBOOK = [
   { name: "Bras", price: 119.99, video: "https://cdn.shopify.com/videos/c/o/v/30f5e22f0c054ae493e39c687a44d696.mp4" },
@@ -55,7 +52,7 @@ const QUOTES = [
 ];
 const SERVICES = [
   { title: "Free & Fast Delivery", text: "Complimentary shipping on qualifying orders." },
-  { title: "24/7 Online Support", text: "Write us anytime. Real people, real answers." },
+  { title: "24/7 Online Support", text: "Write us anytime." },
   { title: "30-Day Easy Returns", text: "Exchange or return within 30 days." },
 ];
 const COLLECTIONS = [
@@ -67,10 +64,10 @@ const COLLECTIONS = [
   { name: "Thermal", accent: "linear-gradient(160deg,#1a3a58,#080c14)" },
 ];
 const POSTS = [
-  { id: "fit-guide", title: "The first-fit bra guide", date: "May 12, 2026", excerpt: "How to choose everyday support without giving up softness.", body: "Start with band first, then cup. A first-fit bra should feel quiet on the body." },
-  { id: "move-with-you", title: "Support that moves with you", date: "May 20, 2026", excerpt: "What to wear when the day runs from desk to dinner.", body: "T-shirt bras and light shapewear hold a clean line under knits." },
-  { id: "night-silk", title: "Satin nights, unapologetically Femme", date: "June 2, 2026", excerpt: "Sleepwear that still feels like an occasion.", body: "Cool-touch satin and a cloud robe are the house formula after dark." },
-  { id: "packaging", title: "Why packaging matters", date: "June 18, 2026", excerpt: "Clients in Dubai and Abu Dhabi keep mentioning the unboxing.", body: "Every order is wrapped like a gift. Easy 30-day returns if the fit is wrong." },
+  { id: "fit-guide", title: "The first-fit bra guide", date: "May 12, 2026", excerpt: "How to choose everyday support.", body: "Start with band first, then cup." },
+  { id: "move-with-you", title: "Support that moves with you", date: "May 20, 2026", excerpt: "Desk to dinner.", body: "T-shirt bras hold a clean line under knits." },
+  { id: "night-silk", title: "Satin nights", date: "June 2, 2026", excerpt: "Sleepwear as an occasion.", body: "Satin cami and a cloud robe after dark." },
+  { id: "packaging", title: "Why packaging matters", date: "June 18, 2026", excerpt: "Unboxing in Dubai and Abu Dhabi.", body: "Every order is wrapped like a gift." },
 ];
 
 async function api<T>(path: string, opts: RequestInit & { token?: string | null } = {}) {
@@ -136,6 +133,11 @@ function App() {
   useEffect(() => { void refreshMe(token); }, [token, refreshMe]);
   useEffect(() => { localStorage.setItem(WISH_KEY, JSON.stringify(wish)); }, [wish]);
   useEffect(() => { localStorage.setItem(FX_KEY, fx); }, [fx]);
+  useEffect(() => {
+    if (view !== "home") return;
+    const id = window.setInterval(() => setHero((h) => (h + 1) % SLIDES.length), 5000);
+    return () => window.clearInterval(id);
+  }, [view]);
 
   function persistToken(t: string | null) {
     if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY);
@@ -182,15 +184,16 @@ function App() {
   }
   async function saveProductNote(p: Product) {
     if (!token) { setView("login"); return; }
-    const { ok, data } = await api<{ note?: Note }>("/api/notes", { method: "POST", token, body: JSON.stringify({ title: p.name, content: `Saved · ${p.category} · ${money(p.price)}` }) });
+    const { ok, data } = await api<{ note?: Note }>("/api/notes", { method: "POST", token, body: JSON.stringify({ title: p.name, content: `Saved · ${p.category}` }) });
     if (ok && data.note) { setNotes((n) => [data.note!, ...n]); setView("account"); }
   }
 
   const productCard = (p: Product) => (
     <article key={p.id} className="card">
-      <button type="button" className="wish-btn" onClick={() => toggleWish(p.id)} aria-label="Wishlist">{wish.includes(p.id) ? "♥" : "♡"}</button>
+      <button type="button" className="wish-btn" onClick={() => toggleWish(p.id)}>{wish.includes(p.id) ? "♥" : "♡"}</button>
       <button type="button" className="card-hit" onClick={() => openProduct(p)}>
-        <div className="card-visual" style={{ backgroundImage: `linear-gradient(180deg,transparent 40%,#0b0610), url(${p.image})` }}>
+        <div className="card-visual">
+          <img src={p.image} alt="" loading="lazy" decoding="async" width={640} height={230} />
           {p.tag && <span className="tag on-dark">{p.tag}</span>}
         </div>
         <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
@@ -207,19 +210,14 @@ function App() {
           <button type="button" className={view === "home" ? "active" : ""} onClick={goHome}>Home</button>
           <div className={`mega-wrap ${mega ? "open" : ""}`} onMouseEnter={() => setMega(true)} onMouseLeave={() => setMega(false)}>
             <button type="button" className={view === "shop" || view === "product" ? "active" : ""} onClick={() => goShop()}>Shop</button>
-            <div className="mega">
-              <p className="eyebrow">Collections</p>
-              <div className="mega-grid">{CATEGORIES.filter((c) => c !== "All").map((c) => <button key={c} type="button" onClick={() => goShop(c)}>{c}</button>)}</div>
-            </div>
+            <div className="mega"><p className="eyebrow">Collections</p><div className="mega-grid">{CATEGORIES.filter((c) => c !== "All").map((c) => <button key={c} type="button" onClick={() => goShop(c)}>{c}</button>)}</div></div>
           </div>
           <button type="button" className={view === "blog" || view === "post" ? "active" : ""} onClick={() => { setView("blog"); setMenuOpen(false); }}>Journal</button>
           <button type="button" className={view === "about" ? "active" : ""} onClick={() => { setView("about"); setMenuOpen(false); }}>About</button>
           <button type="button" className={view === "contact" ? "active" : ""} onClick={() => { setView("contact"); setMenuOpen(false); }}>Contact</button>
         </nav>
         <div className="topbar-right">
-          <select className="fx" value={fx} onChange={(e) => setFx(e.target.value as Currency)} aria-label="Currency">
-            {Object.keys(FX).map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <select className="fx" value={fx} onChange={(e) => setFx(e.target.value as Currency)}>{Object.keys(FX).map((c) => <option key={c} value={c}>{c}</option>)}</select>
           <button type="button" className="icon-btn" onClick={() => { setView("wishlist"); setMenuOpen(false); }}>Wish <em>{wish.length}</em></button>
           <button type="button" className="icon-btn" onClick={() => { setView(user ? "account" : "login"); setMenuOpen(false); }}>{user ? "Account" : "Sign in"}</button>
           <button type="button" className="icon-btn" onClick={() => setView("cart")}>Bag <em>{cartCount}</em></button>
@@ -233,174 +231,64 @@ function App() {
   const footer = (
     <footer className="foot">
       <div className="foot-grid">
-        <div><p className="foot-brand">FEMME</p><p className="muted">Comfort, confidence and care — on Cloudflare.</p></div>
+        <div><p className="foot-brand">FEMME</p><p className="muted">Comfort, confidence and care.</p></div>
         <div><h3>Shop</h3>{CATEGORIES.filter((c) => c !== "All").map((c) => <button key={c} type="button" onClick={() => goShop(c)}>{c}</button>)}</div>
-        <div><h3>House</h3><button type="button" onClick={() => setView("blog")}>Journal</button><button type="button" onClick={() => setView("wishlist")}>Wishlist</button><button type="button" onClick={() => setView(user ? "account" : "login")}>{user ? "My account" : "Sign in"}</button></div>
+        <div><h3>House</h3><button type="button" onClick={() => setView("blog")}>Journal</button><button type="button" onClick={() => setView("wishlist")}>Wishlist</button></div>
         <div><h3>Store</h3><p className="muted">info@silkmoments.com</p></div>
       </div>
-      <div className="copyright">© {new Date().getFullYear()} Femme · Silk Moments · Prices in {fx}</div>
+      <div className="copyright">© {new Date().getFullYear()} Femme · Silk Moments · {fx}</div>
     </footer>
   );
-
   function shell(body: React.ReactNode) { return <div className="store">{header}{body}{footer}</div>; }
 
   if (view === "login" || view === "register") {
     const isLogin = view === "login";
-    return shell(
-      <main className="page auth-page">
-        <p className="eyebrow">{isLogin ? "Welcome back" : "Join Femme"}</p>
-        <h1 className="page-title">{isLogin ? "Sign in" : "Create account"}</h1>
-        <form className="contact-form auth-form" onSubmit={(e) => { e.preventDefault(); void handleAuth(isLogin ? "login" : "register"); }}>
-          <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
-          <label>Password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
-          {authError && <p className="auth-error">{authError}</p>}
-          <button type="submit" className="cta" disabled={authBusy}>{authBusy ? "Please wait…" : isLogin ? "Sign in" : "Create account"}</button>
-        </form>
-        <p className="muted">{isLogin ? <>New? <button type="button" className="text-link" onClick={() => setView("register")}>Create account</button></> : <>Have an account? <button type="button" className="text-link" onClick={() => setView("login")}>Sign in</button></>}</p>
-        <div className="oauth-row"><a className="cta ghost" href="/api/auth/oauth/github">GitHub</a><a className="cta ghost" href="/api/auth/oauth/google">Google</a></div>
-      </main>
-    );
+    return shell(<main className="page"><h1 className="page-title">{isLogin ? "Sign in" : "Create account"}</h1>
+      <form className="contact-form" onSubmit={(e) => { e.preventDefault(); void handleAuth(isLogin ? "login" : "register"); }}>
+        <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
+        <label>Password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
+        {authError && <p className="auth-error">{authError}</p>}
+        <button type="submit" className="cta" disabled={authBusy}>{isLogin ? "Sign in" : "Create account"}</button>
+      </form>
+      <div className="oauth-row"><a className="cta ghost" href="/api/auth/oauth/github">GitHub</a><a className="cta ghost" href="/api/auth/oauth/google">Google</a></div>
+    </main>);
   }
-
   if (view === "account") {
-    return shell(
-      <main className="page">
-        <p className="eyebrow">Your account</p>
-        <h1 className="page-title">{user ? user.email : "Account"}</h1>
-        {!user ? <p className="muted"><button type="button" className="text-link" onClick={() => setView("login")}>Sign in</button></p> : (
-          <>
-            <div className="account-actions"><button type="button" className="cta ghost" onClick={() => void handleLogout()}>Sign out</button><button type="button" className="cta" onClick={() => goShop()}>Shop</button></div>
-            <section className="account-notes">
-              <h2>Saved items & notes</h2>
-              <form className="contact-form" onSubmit={(e) => void saveNote(e)}>
-                <label>Title<input value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} required /></label>
-                <label>Note<textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} rows={3} /></label>
-                <button type="submit" className="cta">Save</button>
-              </form>
-              <ul className="notes-list">
-                {notes.length === 0 && <li className="muted">No saved items yet.</li>}
-                {notes.map((n) => <li key={n.id}><div><strong>{n.title}</strong><p className="muted">{n.content}</p></div><button type="button" className="text-link" onClick={() => void deleteNote(n.id)}>Remove</button></li>)}
-              </ul>
-            </section>
-          </>
-        )}
-      </main>
-    );
+    return shell(<main className="page"><h1 className="page-title">{user ? user.email : "Account"}</h1>
+      {!user ? <button type="button" className="text-link" onClick={() => setView("login")}>Sign in</button> : (
+        <><div className="account-actions"><button type="button" className="cta ghost" onClick={() => void handleLogout()}>Sign out</button></div>
+        <form className="contact-form" onSubmit={(e) => void saveNote(e)}><label>Title<input value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} required /></label><label>Note<textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} rows={3} /></label><button type="submit" className="cta">Save</button></form>
+        <ul className="notes-list">{notes.map((n) => <li key={n.id}><div><strong>{n.title}</strong><p className="muted">{n.content}</p></div><button type="button" className="text-link" onClick={() => void deleteNote(n.id)}>Remove</button></li>)}</ul></>
+      )}</main>);
   }
-
   if (view === "product" && selected) {
-    return shell(
-      <main className="page">
-        <button type="button" className="back" onClick={() => goShop(selected.category as (typeof CATEGORIES)[number])}>Back</button>
-        <div className="detail-grid">
-          <div className="detail-hero photo" style={{ backgroundImage: `url(${selected.image})` }}><span className="hero-mark">{selected.category}</span></div>
-          <div className="detail-copy">
-            {selected.tag && <span className="tag">{selected.tag}</span>}
-            <h1>{selected.name}</h1>
-            <p className="price">{money(selected.price)}{selected.compareAt && <s>{money(selected.compareAt)}</s>}</p>
-            <p className="desc">{selected.description}</p>
-            <div className="detail-actions">
-              <button type="button" className="cta" onClick={() => addToCart(selected)}>Add to bag</button>
-              <button type="button" className="cta ghost" onClick={() => toggleWish(selected.id)}>{wish.includes(selected.id) ? "In wishlist" : "Add to wishlist"}</button>
-              <button type="button" className="cta ghost" onClick={() => void saveProductNote(selected)}>{user ? "Save to account" : "Sign in to save"}</button>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+    return shell(<main className="page"><button type="button" className="back" onClick={() => goShop(selected.category as (typeof CATEGORIES)[number])}>Back</button>
+      <div className="detail-grid"><div className="detail-hero" style={{ backgroundImage: `url(${selected.image})` }} /><div className="detail-copy">
+        <h1>{selected.name}</h1><p className="price">{money(selected.price)}</p><p className="desc">{selected.description}</p>
+        <div className="detail-actions"><button type="button" className="cta" onClick={() => addToCart(selected)}>Add to bag</button>
+        <button type="button" className="cta ghost" onClick={() => toggleWish(selected.id)}>Wishlist</button>
+        <button type="button" className="cta ghost" onClick={() => void saveProductNote(selected)}>Save</button></div></div></div></main>);
   }
-
   if (view === "cart") {
-    return shell(
-      <main className="page">
-        <h1 className="page-title">Your bag</h1>
-        {cart.length === 0 ? <p className="muted"><button type="button" className="text-link" onClick={() => goShop()}>Shop</button></p> : (
-          <div className="cart-layout">
-            <ul className="cart-list">{cart.map((l) => (
-              <li key={l.product.id}>
-                <div className="cart-swatch photo" style={{ backgroundImage: `url(${l.product.image})` }} />
-                <div><strong>{l.product.name}</strong><p className="muted">{money(l.product.price)}</p></div>
-                <div className="qty"><button type="button" onClick={() => setQty(l.product.id, l.qty - 1)}>-</button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.product.id, l.qty + 1)}>+</button></div>
-                <strong>{money(l.product.price * l.qty)}</strong>
-              </li>
-            ))}</ul>
-            <aside className="cart-sum"><p>Subtotal <strong>{money(cartTotal)}</strong></p><button type="button" className="cta" onClick={() => setView(user ? "contact" : "login")}>{user ? "Checkout" : "Sign in"}</button></aside>
-          </div>
-        )}
-      </main>
-    );
+    return shell(<main className="page"><h1 className="page-title">Your bag</h1>
+      {cart.length === 0 ? <button type="button" className="text-link" onClick={() => goShop()}>Shop</button> : (
+        <div className="cart-layout"><ul className="cart-list">{cart.map((l) => <li key={l.product.id}><div className="cart-swatch" style={{ backgroundImage: `url(${l.product.image})` }} /><div><strong>{l.product.name}</strong></div>
+          <div className="qty"><button type="button" onClick={() => setQty(l.product.id, l.qty - 1)}>-</button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.product.id, l.qty + 1)}>+</button></div><strong>{money(l.product.price * l.qty)}</strong></li>)}</ul>
+          <aside className="cart-sum"><p>Subtotal <strong>{money(cartTotal)}</strong></p><button type="button" className="cta" onClick={() => setView(user ? "contact" : "login")}>Checkout</button></aside></div>
+      )}</main>);
   }
-
-  if (view === "wishlist") {
-    return shell(
-      <main className="page">
-        <div className="catalog-head"><h1 className="page-title">Wishlist</h1><p className="muted">{wished.length} saved</p></div>
-        {wished.length === 0 ? <p className="muted">Tap the heart on any piece.</p> : <div className="grid">{wished.map(productCard)}</div>}
-      </main>
-    );
-  }
-
-  if (view === "blog") {
-    return shell(
-      <main className="page">
-        <p className="eyebrow">From the blog</p>
-        <h1 className="page-title">Journal</h1>
-        <div className="blog-grid">{POSTS.map((p) => (
-          <article key={p.id} className="blog-card"><button type="button" className="card-hit" onClick={() => openPost(p)}>
-            <p className="card-cat">{p.date}</p><h3>{p.title}</h3><p className="muted">{p.excerpt}</p>
-          </button></article>
-        ))}</div>
-      </main>
-    );
-  }
-
-  if (view === "post" && post) {
-    return shell(
-      <main className="page">
-        <button type="button" className="back" onClick={() => setView("blog")}>Journal</button>
-        <p className="eyebrow">{post.date}</p>
-        <h1 className="page-title">{post.title}</h1>
-        <p className="lede">{post.body}</p>
-      </main>
-    );
-  }
-
-  if (view === "about") {
-    return shell(
-      <main className="page about">
-        <p className="eyebrow">About us</p>
-        <h1 className="page-title">Femme — redefining comfort, confidence & care</h1>
-        <p className="lede">At Femme, true beauty begins with self-love. Built for women, by women. Celebrate you — bold, beautiful, and unapologetically Femme.</p>
-      </main>
-    );
-  }
-
-  if (view === "contact") {
-    return shell(
-      <main className="page">
-        <h1 className="page-title">Contact</h1>
-        <form className="contact-form" onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
-          <label>Name<input required /></label><label>Email<input type="email" required /></label><label>Message<textarea required rows={4} /></label>
-          <button type="submit" className="cta">{sent ? "Sent" : "Send"}</button>
-        </form>
-      </main>
-    );
-  }
-
-  if (view === "shop") {
-    return shell(
-      <main className="page">
-        <div className="catalog-head"><h1 className="page-title">{category === "All" ? "The collection" : category}</h1><p className="muted">{filtered.length} pieces</p></div>
-        <div className="nav-cats">{CATEGORIES.map((c) => <button key={c} type="button" className={category === c ? "active" : ""} onClick={() => setCategory(c)}>{c}</button>)}</div>
-        <div className="grid">{filtered.map(productCard)}</div>
-      </main>
-    );
-  }
+  if (view === "wishlist") return shell(<main className="page"><h1 className="page-title">Wishlist</h1>{wished.length ? <div className="grid">{wished.map(productCard)}</div> : <p className="muted">Tap a heart.</p>}</main>);
+  if (view === "blog") return shell(<main className="page"><h1 className="page-title">Journal</h1><div className="blog-grid">{POSTS.map((p) => <article key={p.id} className="blog-card"><button type="button" className="card-hit" onClick={() => openPost(p)}><p className="card-cat">{p.date}</p><h3>{p.title}</h3></button></article>)}</div></main>);
+  if (view === "post" && post) return shell(<main className="page"><button type="button" className="back" onClick={() => setView("blog")}>Journal</button><h1 className="page-title">{post.title}</h1><p className="lede">{post.body}</p></main>);
+  if (view === "about") return shell(<main className="page"><h1 className="page-title">Femme — comfort, confidence & care</h1><p className="lede">Built for women, by women. Unapologetically Femme.</p></main>);
+  if (view === "contact") return shell(<main className="page"><h1 className="page-title">Contact</h1><form className="contact-form" onSubmit={(e) => { e.preventDefault(); setSent(true); }}><label>Name<input required /></label><label>Email<input type="email" required /></label><label>Message<textarea required rows={4} /></label><button type="submit" className="cta">{sent ? "Sent" : "Send"}</button></form></main>);
+  if (view === "shop") return shell(<main className="page"><h1 className="page-title">{category === "All" ? "The collection" : category}</h1><div className="nav-cats">{CATEGORIES.map((c) => <button key={c} type="button" className={category === c ? "active" : ""} onClick={() => setCategory(c)}>{c}</button>)}</div><div className="grid">{filtered.map(productCard)}</div></main>);
 
   return shell(
     <>
       <section className="hero">
-        <div className="hero-slide" style={{ background: "linear-gradient(115deg, rgba(155,31,90,0.38), rgba(26,58,88,0.22) 42%, transparent 72%)" }}>
+        {SLIDES.map((s, i) => <img key={s.title} className={hero === i ? "hero-photo on" : "hero-photo"} src={s.image} alt="" fetchPriority={i === 0 ? "high" : "low"} decoding="async" />)}
+        <div className="hero-slide">
           <p className="eyebrow light">{slide.kicker}</p>
           <h1>{slide.title}</h1>
           <p className="lede light">{slide.lede}</p>
@@ -408,49 +296,22 @@ function App() {
           <div className="hero-dots">{SLIDES.map((_, i) => <button key={i} type="button" className={hero === i ? "on" : ""} onClick={() => setHero(i)} />)}</div>
         </div>
       </section>
-      <section className="page">
-        <div className="catalog-head"><h2>Shop by collection</h2></div>
-        <div className="collections">{COLLECTIONS.map((c) => <button key={c.name} type="button" className="col-card" style={{ background: c.accent }} onClick={() => goShop(c.name as (typeof CATEGORIES)[number])}><span>{c.name}</span></button>)}</div>
-      </section>
-      <section className="page split-banner">
-        <p className="eyebrow">New collection</p>
-        <h2>Support that moves with you</h2>
-        <p className="lede">Find the perfect bra for every mood, move, and moment.</p>
-        <button type="button" className="cta" onClick={() => goShop("Bras")}>Shop now</button>
-      </section>
-      <section className="page">
-        <div className="catalog-head"><h2>Shop best collection</h2><button type="button" className="text-link" onClick={() => goShop()}>View all</button></div>
-        <div className="grid">{PRODUCTS.slice(0, 8).map(productCard)}</div>
-      </section>
-      <section className="page">
-        <div className="catalog-head"><h2>Lookbook</h2></div>
+      <section className="page"><div className="catalog-head"><h2>Shop by collection</h2></div>
+        <div className="collections">{COLLECTIONS.map((c) => <button key={c.name} type="button" className="col-card" style={{ background: c.accent }} onClick={() => goShop(c.name as (typeof CATEGORIES)[number])}><span>{c.name}</span></button>)}</div></section>
+      <section className="page split-banner"><p className="eyebrow">New collection</p><h2>Support that moves with you</h2><button type="button" className="cta" onClick={() => goShop("Bras")}>Shop now</button></section>
+      <section className="page"><div className="catalog-head"><h2>Shop best collection</h2></div><div className="grid">{PRODUCTS.slice(0, 8).map(productCard)}</div></section>
+      <section className="page"><div className="catalog-head"><h2>Lookbook</h2></div>
         <div className="lookbook">{LOOKBOOK.map((l) => (
-          <button key={l.name} type="button" className="look-card video" onClick={() => goShop(l.name as (typeof CATEGORIES)[number])}>
-            <video src={l.video} muted loop playsInline autoPlay preload="metadata" />
-            <span className="card-cat">{l.name}</span>
-            <strong>Start {money(l.price)}</strong>
+          <button key={l.name} type="button" className="look-card" onClick={() => goShop(l.name as (typeof CATEGORIES)[number])}>
+            <video src={l.video} muted loop playsInline preload="none" poster={photo("photo-1515886657613-9f3515b0c78f", 480)} onMouseEnter={(e) => { void e.currentTarget.play().catch(() => {}); }} onMouseLeave={(e) => { e.currentTarget.pause(); }} />
+            <span className="card-cat">{l.name}</span><strong>Start {money(l.price)}</strong>
           </button>
-        ))}</div>
-      </section>
-      <section className="page">
-        <div className="catalog-head"><h2>From the blog</h2><button type="button" className="text-link" onClick={() => setView("blog")}>View all</button></div>
-        <div className="blog-grid">{POSTS.slice(0, 3).map((p) => (
-          <article key={p.id} className="blog-card"><button type="button" className="card-hit" onClick={() => openPost(p)}>
-            <p className="card-cat">{p.date}</p><h3>{p.title}</h3><p className="muted">{p.excerpt}</p>
-          </button></article>
-        ))}</div>
-      </section>
-      <section className="page quotes">
-        <div className="catalog-head"><h2>What our clients say</h2></div>
-        <div className="quote-grid">{QUOTES.map((q) => (
-          <blockquote key={q.who} className="quote"><p>{q.title}</p><cite>{q.who}</cite></blockquote>
-        ))}</div>
-      </section>
-      <section className="page">
-        <div className="service-row">{SERVICES.map((s) => (
-          <article key={s.title} className="service"><h3>{s.title}</h3><p className="muted">{s.text}</p></article>
-        ))}</div>
-      </section>
+        ))}</div></section>
+      <section className="page"><div className="catalog-head"><h2>From the blog</h2></div>
+        <div className="blog-grid">{POSTS.slice(0, 3).map((p) => <article key={p.id} className="blog-card"><button type="button" className="card-hit" onClick={() => openPost(p)}><p className="card-cat">{p.date}</p><h3>{p.title}</h3></button></article>)}</div></section>
+      <section className="page"><div className="catalog-head"><h2>What our clients say</h2></div>
+        <div className="quote-grid">{QUOTES.map((q) => <blockquote key={q.who} className="quote"><p>{q.title}</p><cite>{q.who}</cite></blockquote>)}</div></section>
+      <section className="page"><div className="service-row">{SERVICES.map((s) => <article key={s.title} className="service"><h3>{s.title}</h3><p className="muted">{s.text}</p></article>)}</div></section>
     </>
   );
 }
