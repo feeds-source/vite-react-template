@@ -8,10 +8,11 @@ Stack: **Vite + React** storefront + **Hono Worker** API on **Cloudflare Workers
 | Custom domain | https://www.silkmoments.com |
 | Repo | https://github.com/feeds-source/vite-react-template |
 | Workflow | [Deploy to Cloudflare](https://github.com/feeds-source/vite-react-template/actions/workflows/deploy.yml) |
+| D1 only | [Apply D1 migrations](https://github.com/feeds-source/vite-react-template/actions/workflows/d1-migrate.yml) |
 
 Cloudflare account ID: `1e611220afd75688b509ba299e98bde7`  
 Worker name: `vite-react-template`  
-D1 database: `vite-react-db`
+D1 database: `vite-react-db` (`0e2f9300-7343-4825-9e90-cb525bcba172`)
 
 ---
 
@@ -21,85 +22,80 @@ Repo → **Settings → Secrets and variables → Actions**
 
 | Name | Required | Purpose |
 |------|----------|---------|
-| `CLOUDFLARE_API_TOKEN` | Yes | Token with **Workers Scripts Edit** and **D1 Edit** |
-| `D1_DATABASE_ID` | For auth/notes | UUID of `vite-react-db` from Cloudflare → Workers → D1 |
+| `CLOUDFLARE_API_TOKEN` | Yes | **Workers Scripts Edit** + **Account → D1 → Edit** |
+| `D1_DATABASE_ID` | Recommended | `0e2f9300-7343-4825-9e90-cb525bcba172` |
 | `CLOUDFLARE_ACCOUNT_ID` | Optional | Defaults to `1e611220afd75688b509ba299e98bde7` |
 
-Create the API token: Cloudflare dashboard → **My Profile → API Tokens → Create Token** → use **Edit Cloudflare Workers** and add **Account → D1 → Edit**.
+Create the token: **My Profile → API Tokens → Create Token → Edit Cloudflare Workers**, then add **Account → D1 → Edit**.
 
-Do **not** enable Cloudflare **Workers Builds** on the same repo while this workflow is on. Two pipelines would deploy twice per push.
-
----
-
-## 2. Production deploy (usual path)
-
-1. Commit on a branch and open a PR into `main` (optional preview via `wrangler versions upload`).
-2. Merge to `main`.
-3. Actions runs **Deploy to Cloudflare → Production**:
-   - `npm ci`
-   - ensure D1 binding
-   - `npm run build`
-   - `wrangler d1 migrations apply vite-react-db --remote` (if D1 is bound)
-   - `wrangler deploy`
-4. Wait until the run is green (~40–60 seconds).
-5. Hard-refresh the live site (cached HTML can lag):  
-   https://www.silkmoments.com/?v=now  
-   or Ctrl+Shift+R / Cmd+Shift+R.
-
-### Run deploy without a new commit
-
-Actions → **Deploy to Cloudflare** → **Run workflow** → branch `main`.  
-Optional input: `d1_database_id` if the secret is missing.
+Do **not** enable Cloudflare **Workers Builds** on the same repo while this workflow is on.
 
 ---
 
-## 3. Custom domain (www.silkmoments.com)
+## 2. Production deploy
 
-1. Cloudflare dashboard → **Workers & Pages** → `vite-react-template` → **Settings → Domains & Routes**.
-2. Add `www.silkmoments.com` and `silkmoments.com` (or a redirect from apex → www).
-3. DNS on the same Cloudflare zone:
+Merge to `main` or **Actions → Deploy to Cloudflare → Run workflow**.
+
+Order: `npm ci` → pin D1 in `wrangler.json` → `npm run build` → **`wrangler d1 migrations apply vite-react-db --remote`** → `wrangler deploy`.
+
+Hard-refresh https://www.silkmoments.com/?v=now after the run is green.
+
+---
+
+## 3. Custom domain
+
+Workers → `vite-react-template` → **Domains & Routes** → add `www.silkmoments.com`.
 
 ```text
 www   CNAME   vite-react-template.limefashion52.workers.dev   Proxied
-@     CNAME   vite-react-template.limefashion52.workers.dev   Proxied
 ```
 
-Or use a Worker custom domain (Cloudflare writes the record for you).
-
-4. SSL/TLS mode: **Full (strict)**.
-5. If the site looks old after a deploy, purge cache:  
-   **Caching → Configuration → Purge Everything**, then hard-refresh.
-
-If DNS “does not resolve” on a local ISP, try `1.1.1.1` or a private window. The Worker URL should still load.
+SSL/TLS: **Full (strict)**. Purge cache if the HTML is stale.
 
 ---
 
-## 4. Deploy from your laptop
+## 4. Laptop deploy
 
 ```bash
-git clone https://github.com/feeds-source/vite-react-template.git
-cd vite-react-template
 npm ci
 npx wrangler login
-npx wrangler d1 migrations apply vite-react-db --remote
-npm run build
-npm run deploy
+npm run db:migrate:remote
+npm run build && npm run deploy
 ```
 
-`npm run deploy` is `wrangler deploy` and publishes the same Worker as Actions.
-
-Local app (no production publish):
+Local:
 
 ```bash
-npx wrangler d1 migrations apply vite-react-db --local
+npm run db:migrate
 npm run dev
 ```
 
 ---
 
-## 5. Production Worker secrets (OAuth)
+## 5. D1 migrations
 
-Only needed if Sign in with GitHub/Google should work on the live domain.
+Files live in [`migrations/`](migrations/README.md). Wrangler tracks them in the remote `d1_migrations` table.
+
+| File | Schema |
+|------|--------|
+| `0001_init.sql` | `notes` |
+| `0002_auth.sql` | `users`, `sessions`, `notes.user_id` |
+| `0003_oauth.sql` | `oauth_accounts` |
+
+```bash
+npm run db:status:remote     # which files are applied
+npm run db:migrate:remote    # apply pending files
+```
+
+Or **Actions → Apply D1 migrations → Run workflow** (does not republish the Worker).
+
+Add a new file as `migrations/0004_....sql`. Never rename or edit an already-applied file; add a new numbered file instead.
+
+If apply fails with “database not found”, set GitHub secret `D1_DATABASE_ID` to `0e2f9300-7343-4825-9e90-cb525bcba172` and confirm the token has **D1 Edit**.
+
+---
+
+## 6. Production Worker secrets (OAuth)
 
 ```bash
 npx wrangler secret put GITHUB_CLIENT_ID
@@ -109,21 +105,15 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put OAUTH_STATE_SECRET
 ```
 
-OAuth app callback URLs:
+Callbacks:
 
 - `https://www.silkmoments.com/api/auth/oauth/github/callback`
 - `https://www.silkmoments.com/api/auth/oauth/google/callback`
-- also add the `workers.dev` twins if you test on that host
-
-`APP_URL` in `wrangler.json` is `https://vite-react-template.limefashion52.workers.dev`. Point it at `https://www.silkmoments.com` if OAuth redirects should stay on the custom domain.
 
 ---
 
-## 6. Check a deploy
+## 7. Check a deploy
 
-1. Actions run is **success**.
-2. HTML lists a new hashed bundle, e.g. `/assets/index-….js`.
-3. Homepage shows current theme copy (ticker, hero, collections).
-4. `/api/` responds on the Worker.
-
-If the UI is stale: hard-refresh, then purge Cloudflare cache. Do not assume a failed DNS lookup means the Worker is down — open the `workers.dev` URL first.
+1. Actions run is **success** (including **Apply D1 migrations**).
+2. New `/assets/index-….js` hash in the HTML.
+3. `/api/` responds on the Worker.
