@@ -1,16 +1,18 @@
-# React + Vite + Hono + Cloudflare Workers + D1
+# React + Vite + Hono + Cloudflare Workers + D1 + Auth
 
-Full-stack template with **Cloudflare D1** (SQLite) integrated.
+Full-stack notes app with **Cloudflare D1** and **session-based authentication**.
 
 - **Frontend**: React 19 + Vite
 - **Backend**: Hono on Cloudflare Workers
-- **Database**: Cloudflare D1 (`notes` table)
+- **Database**: Cloudflare D1
+- **Auth**: Email/password + Bearer session tokens (PBKDF2 hashing via Web Crypto)
 
 ## Features
 
-- CRUD API for notes (`/api/notes`)
-- React UI to create, list, and delete notes
-- Local D1 via Wrangler + migrations
+- Register / login / logout
+- `requireAuth` middleware on protected routes
+- Notes scoped per user
+- Local D1 via Wrangler migrations
 
 ## Quick start
 
@@ -18,7 +20,7 @@ Full-stack template with **Cloudflare D1** (SQLite) integrated.
 npm install
 ```
 
-### 1. Create the D1 database (one-time, for production)
+### 1. Create the D1 database (production)
 
 ```bash
 npx wrangler d1 create vite-react-db
@@ -26,29 +28,21 @@ npx wrangler d1 create vite-react-db
 
 Copy the returned `database_id` into `wrangler.json` → `d1_databases[0].database_id`.
 
-> For **local dev**, Wrangler uses a local SQLite file automatically. The placeholder `database_id` is fine until you deploy.
-
 ### 2. Apply migrations
 
-Local:
-
 ```bash
+# Local
 npx wrangler d1 migrations apply vite-react-db --local
-```
 
-Remote (production):
-
-```bash
+# Remote
 npx wrangler d1 migrations apply vite-react-db --remote
 ```
 
-### 3. Generate types (optional but recommended)
+### 3. Generate types (recommended)
 
 ```bash
 npm run cf-typegen
 ```
-
-This updates `worker-configuration.d.ts` so `c.env.DB` is typed.
 
 ### 4. Develop
 
@@ -64,38 +58,50 @@ Open [http://localhost:5173](http://localhost:5173).
 npm run build && npm run deploy
 ```
 
-Make sure migrations are applied remotely before or after the first deploy.
+## Auth API
 
-## API
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/auth/register` | No | `{ email, password }` → `{ user, token }` |
+| `POST` | `/api/auth/login` | No | `{ email, password }` → `{ user, token }` |
+| `POST` | `/api/auth/logout` | Yes | Invalidate session |
+| `GET` | `/api/auth/me` | Yes | Current user |
+
+Send the token as:
+
+```
+Authorization: Bearer <token>
+```
+
+## Notes API (all require auth)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/` | Health check |
-| `GET` | `/api/notes` | List notes |
+| `GET` | `/api/notes` | List your notes |
 | `GET` | `/api/notes/:id` | Get one note |
-| `POST` | `/api/notes` | Create note `{ title, content? }` |
+| `POST` | `/api/notes` | Create note |
 | `PUT` | `/api/notes/:id` | Update note |
 | `DELETE` | `/api/notes/:id` | Delete note |
+
+## Auth middleware
+
+Defined in `src/worker/auth.ts`:
+
+- **`requireAuth`** — returns `401` if missing/invalid/expired Bearer token; sets `c.get("user")`
+- **`optionalAuth`** — sets user when token is valid, otherwise continues
+- Passwords hashed with **PBKDF2-SHA256** (100k iterations) via Web Crypto (no extra deps)
+- Sessions stored in D1 (`sessions` table), 30-day TTL
 
 ## Project structure
 
 ```
 ├── migrations/
-│   └── 0001_init.sql      # D1 schema
+│   ├── 0001_init.sql       # notes table
+│   └── 0002_auth.sql       # users, sessions, notes.user_id
 ├── src/
-│   ├── react-app/         # React UI
+│   ├── react-app/          # Login UI + notes UI
 │   └── worker/
-│       └── index.ts       # Hono + D1 API
-├── wrangler.json          # Workers + D1 binding
-└── package.json
+│       ├── auth.ts         # hashing, sessions, middleware
+│       └── index.ts        # Hono routes
+└── wrangler.json
 ```
-
-## Useful commands
-
-| Command | Action |
-|---------|--------|
-| `npm run dev` | Local dev (Vite + Workers + local D1) |
-| `npm run build` | Production build |
-| `npm run deploy` | Deploy Worker |
-| `npm run cf-typegen` | Regenerate Worker/D1 types |
-| `npx wrangler d1 migrations apply vite-react-db --local` | Apply migrations locally |
