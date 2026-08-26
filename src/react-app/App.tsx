@@ -1,365 +1,278 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import "./App.css";
 
-type Note = {
-	id: number;
-	title: string;
-	content: string;
-	created_at: string;
-	updated_at: string;
+type Product = {
+	id: string;
+	name: string;
+	category: string;
+	price: number;
+	description: string;
+	tag?: string;
+	accent: string;
 };
 
-type User = {
-	id: number;
-	email: string;
-};
+const PRODUCTS: Product[] = [
+	{
+		id: "wallet-denim",
+		name: "Selvedge Denim Wallet",
+		category: "Wallets",
+		price: 42,
+		description:
+			"Hand-stitched bifold from leftover Japanese selvedge. Ages with a soft indigo fade—built for cards, cash, and years of wear.",
+		tag: "Best seller",
+		accent: "#3d5a80",
+	},
+	{
+		id: "wallet-patch",
+		name: "Patchwork Coin Wallet",
+		category: "Wallets",
+		price: 36,
+		description:
+			"Recycled jean pockets turned into a compact coin and card pouch. Brass snap, raw edges, one-of-a-kind panels.",
+		accent: "#5c4033",
+	},
+	{
+		id: "keychain-rivet",
+		name: "Rivet Tag Keychain",
+		category: "Keychains",
+		price: 14,
+		description:
+			"A worn denim scrap, copper rivet, and solid brass ring. Small enough for keys, tough enough for daily carry.",
+		tag: "New",
+		accent: "#8b7355",
+	},
+	{
+		id: "keychain-loop",
+		name: "Belt-Loop Key Fob",
+		category: "Keychains",
+		price: 18,
+		description:
+			"Cut from authentic belt loops. Indigo-dyed cord and a stamped year tag—simple, useful, and pure workwear.",
+		accent: "#2c3e50",
+	},
+	{
+		id: "jacket-truck",
+		name: "Type III Trucker Jacket",
+		category: "Jackets",
+		price: 168,
+		description:
+			"Classic trucker cut in 13.5 oz rigid denim. Copper buttons, chest pockets, and a blank canvas for your own fade story.",
+		tag: "Heritage",
+		accent: "#1a365d",
+	},
+	{
+		id: "jacket-chore",
+		name: "Chore Coat — Faded Indigo",
+		category: "Jackets",
+		price: 154,
+		description:
+			"Roomy chore silhouette with three front pockets. Pre-washed for a lived-in hand; ready for workshops and weekends.",
+		accent: "#4a5568",
+	},
+	{
+		id: "pant-straight",
+		name: "Straight Fit 1955",
+		category: "Pants",
+		price: 128,
+		description:
+			"Mid-rise straight leg inspired by mid-century work pants. Unsanforized option available—expect honest shrink and character.",
+		tag: "Classic",
+		accent: "#2b4c7e",
+	},
+	{
+		id: "pant-wide",
+		name: "Wide Crop Carpenter",
+		category: "Pants",
+		price: 138,
+		description:
+			"Relaxed crop with tool pocket and hammer loop. Soft stone wash, reinforced seams, made for movement.",
+		accent: "#5a6a7a",
+	},
+	{
+		id: "apron-studio",
+		name: "Studio Denim Apron",
+		category: "Goods",
+		price: 58,
+		description:
+			"Cross-back apron from heavy mill ends. Leather straps, deep pockets—for makers, baristas, and weekend projects.",
+		accent: "#6b4423",
+	},
+	{
+		id: "tote-market",
+		name: "Market Tote — Repaired",
+		category: "Goods",
+		price: 48,
+		description:
+			"Upcycled jean legs and sashiko-style mends. Roomy, washable, and proudly imperfect.",
+		tag: "Upcycled",
+		accent: "#3d4450",
+	},
+	{
+		id: "cap-brim",
+		name: "Indigo Work Cap",
+		category: "Goods",
+		price: 32,
+		description:
+			"Six-panel cap in soft broken-in denim. Adjustable strap, subtle tonal stitch—everyday headwear with grit.",
+		accent: "#34495e",
+	},
+	{
+		id: "patch-kit",
+		name: "Vintage Patch Kit",
+		category: "Goods",
+		price: 24,
+		description:
+			"Assorted denim scraps, needles, and waxed thread. Repair, customize, or start your next small project.",
+		accent: "#7d6b55",
+	},
+];
 
-const TOKEN_KEY = "notes_auth_token";
-
-function authHeaders(token: string | null): HeadersInit {
-	const h: Record<string, string> = { "Content-Type": "application/json" };
-	if (token) h.Authorization = `Bearer ${token}`;
-	return h;
-}
+const CATEGORIES = ["All", "Wallets", "Keychains", "Jackets", "Pants", "Goods"] as const;
 
 function App() {
-	const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
-	const [user, setUser] = useState<User | null>(null);
-	const [authMode, setAuthMode] = useState<"login" | "register">("login");
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [authLoading, setAuthLoading] = useState(false);
-	const [oauthAvailable, setOauthAvailable] = useState<{ github: boolean; google: boolean }>({
-		github: false,
-		google: false,
-	});
+	const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All");
+	const [selected, setSelected] = useState<Product | null>(null);
+	const [cartCount, setCartCount] = useState(0);
 
-	const [notes, setNotes] = useState<Note[]>([]);
-	const [title, setTitle] = useState("");
-	const [content, setContent] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const [saving, setSaving] = useState(false);
-	const [booting, setBooting] = useState(true);
+	const filtered = useMemo(() => {
+		if (category === "All") return PRODUCTS;
+		return PRODUCTS.filter((p) => p.category === category);
+	}, [category]);
 
-	const persistToken = (t: string | null) => {
-		setToken(t);
-		if (t) localStorage.setItem(TOKEN_KEY, t);
-		else localStorage.removeItem(TOKEN_KEY);
-	};
-
-	// Capture OAuth redirect (?auth_token= / ?auth_error=)
-	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		const authToken = params.get("auth_token");
-		const authError = params.get("auth_error");
-		if (authToken) {
-			persistToken(authToken);
-			window.history.replaceState({}, "", window.location.pathname);
-		}
-		if (authError) {
-			setError(`OAuth error: ${authError}`);
-			window.history.replaceState({}, "", window.location.pathname);
-		}
-	}, []);
-
-	// Which OAuth providers are configured
-	useEffect(() => {
-		void fetch("/api/")
-			.then((r) => r.json())
-			.then((data: { oauth?: { github?: boolean; google?: boolean } }) => {
-				setOauthAvailable({
-					github: Boolean(data.oauth?.github),
-					google: Boolean(data.oauth?.google),
-				});
-			})
-			.catch(() => null);
-	}, []);
-
-	// Restore session on load
-	useEffect(() => {
-		if (!token) {
-			setBooting(false);
-			return;
-		}
-		void (async () => {
-			try {
-				const res = await fetch("/api/auth/me", { headers: authHeaders(token) });
-				if (!res.ok) throw new Error("session invalid");
-				const data = (await res.json()) as { user: User };
-				setUser(data.user);
-			} catch {
-				persistToken(null);
-				setUser(null);
-			} finally {
-				setBooting(false);
-			}
-		})();
-	}, [token]);
-
-	const loadNotes = useCallback(async () => {
-		if (!token) return;
-		setError(null);
-		setLoading(true);
-		try {
-			const res = await fetch("/api/notes", { headers: authHeaders(token) });
-			if (res.status === 401) {
-				persistToken(null);
-				setUser(null);
-				throw new Error("Session expired — please log in again");
-			}
-			if (!res.ok) throw new Error(`Failed to load notes (${res.status})`);
-			const data = (await res.json()) as { notes: Note[] };
-			setNotes(data.notes);
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Failed to load notes");
-		} finally {
-			setLoading(false);
-		}
-	}, [token]);
-
-	useEffect(() => {
-		if (user && token) void loadNotes();
-	}, [user, token, loadNotes]);
-
-	async function handleAuth(e: React.FormEvent) {
-		e.preventDefault();
-		setAuthLoading(true);
-		setError(null);
-		try {
-			const path = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
-			const res = await fetch(path, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email: email.trim(), password }),
-			});
-			const data = (await res.json().catch(() => null)) as
-				| { user?: User; token?: string; error?: string }
-				| null;
-			if (!res.ok) throw new Error(data?.error ?? `Auth failed (${res.status})`);
-			if (!data?.token || !data.user) throw new Error("Invalid auth response");
-			persistToken(data.token);
-			setUser(data.user);
-			setPassword("");
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Authentication failed");
-		} finally {
-			setAuthLoading(false);
-		}
+	function addToCart() {
+		setCartCount((c) => c + 1);
 	}
 
-	async function handleLogout() {
-		if (token) {
-			await fetch("/api/auth/logout", {
-				method: "POST",
-				headers: authHeaders(token),
-			}).catch(() => null);
-		}
-		persistToken(null);
-		setUser(null);
-		setNotes([]);
-	}
-
-	async function handleCreate(e: React.FormEvent) {
-		e.preventDefault();
-		if (!title.trim() || !token) return;
-
-		setSaving(true);
-		setError(null);
-		try {
-			const res = await fetch("/api/notes", {
-				method: "POST",
-				headers: authHeaders(token),
-				body: JSON.stringify({ title: title.trim(), content: content.trim() }),
-			});
-			if (res.status === 401) {
-				persistToken(null);
-				setUser(null);
-				throw new Error("Session expired — please log in again");
-			}
-			if (!res.ok) {
-				const body = (await res.json().catch(() => null)) as { error?: string } | null;
-				throw new Error(body?.error ?? `Create failed (${res.status})`);
-			}
-			setTitle("");
-			setContent("");
-			await loadNotes();
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Failed to create note");
-		} finally {
-			setSaving(false);
-		}
-	}
-
-	async function handleDelete(id: number) {
-		if (!token) return;
-		setError(null);
-		try {
-			const res = await fetch(`/api/notes/${id}`, {
-				method: "DELETE",
-				headers: authHeaders(token),
-			});
-			if (res.status === 401) {
-				persistToken(null);
-				setUser(null);
-				throw new Error("Session expired — please log in again");
-			}
-			if (!res.ok) throw new Error(`Delete failed (${res.status})`);
-			setNotes((prev) => prev.filter((n) => n.id !== id));
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Failed to delete note");
-		}
-	}
-
-	if (booting) {
+	if (selected) {
 		return (
-			<div className="app">
-				<p className="muted">Loading…</p>
-			</div>
-		);
-	}
-
-	if (!user) {
-		return (
-			<div className="app">
-				<header className="header">
-					<h1>Notes + D1</h1>
-					<p className="subtitle">Sign in to manage your notes</p>
+			<div className="shop">
+				<header className="topbar">
+					<button type="button" className="brand" onClick={() => setSelected(null)}>
+						Indigo <span>Archive</span>
+					</button>
+					<div className="topbar-right">
+						<span className="cart-pill">Bag {cartCount}</span>
+					</div>
 				</header>
 
-				{(oauthAvailable.github || oauthAvailable.google) && (
-					<section className="panel">
-						<h2>Continue with</h2>
-						<div className="oauth-row">
-							{oauthAvailable.github && (
-								<a className="oauth-btn github" href="/api/auth/oauth/github">
-									GitHub
-								</a>
-							)}
-							{oauthAvailable.google && (
-								<a className="oauth-btn google" href="/api/auth/oauth/google">
-									Google
-								</a>
-							)}
-						</div>
-					</section>
-				)}
-
-				<section className="panel">
-					<div className="panel-header">
-						<h2>{authMode === "login" ? "Log in" : "Create account"}</h2>
-						<button
-							type="button"
-							className="ghost"
-							onClick={() => {
-								setAuthMode(authMode === "login" ? "register" : "login");
-								setError(null);
-							}}
+				<main className="detail">
+					<button type="button" className="back" onClick={() => setSelected(null)}>
+						← Back to shop
+					</button>
+					<div className="detail-grid">
+						<div
+							className="detail-hero"
+							style={{ background: `linear-gradient(145deg, ${selected.accent} 0%, #1a1a1a 100%)` }}
 						>
-							{authMode === "login" ? "Need an account?" : "Have an account?"}
-						</button>
+							<span className="hero-mark">{selected.category}</span>
+							<span className="hero-initial">{selected.name.charAt(0)}</span>
+						</div>
+						<div className="detail-copy">
+							{selected.tag && <span className="tag">{selected.tag}</span>}
+							<h1>{selected.name}</h1>
+							<p className="price">${selected.price}</p>
+							<p className="desc">{selected.description}</p>
+							<ul className="specs">
+								<li>Made from real denim & mill leftovers</li>
+								<li>Ships in recycled paper wrap</li>
+								<li>Built to fade, not fall apart</li>
+							</ul>
+							<button type="button" className="cta" onClick={addToCart}>
+								Add to bag
+							</button>
+						</div>
 					</div>
+				</main>
 
-					<form onSubmit={handleAuth} className="form">
-						<input
-							type="email"
-							placeholder="Email"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							disabled={authLoading}
-							autoComplete="email"
-							required
-						/>
-						<input
-							type="password"
-							placeholder="Password (min 8 chars)"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							disabled={authLoading}
-							autoComplete={authMode === "login" ? "current-password" : "new-password"}
-							minLength={8}
-							required
-						/>
-						<button type="submit" disabled={authLoading}>
-							{authLoading ? "Please wait…" : authMode === "login" ? "Log in" : "Register"}
-						</button>
-					</form>
-				</section>
-
-				{error && <div className="error">{error}</div>}
+				<footer className="foot">
+					<p>Indigo Archive · Vintage denim goods · Est. in the wash</p>
+				</footer>
 			</div>
 		);
 	}
 
 	return (
-		<div className="app">
-			<header className="header">
-				<div className="header-row">
-					<div>
-						<h1>Notes + D1</h1>
-						<p className="subtitle">Signed in as {user.email}</p>
-					</div>
-					<button type="button" className="ghost" onClick={() => void handleLogout()}>
-						Log out
-					</button>
+		<div className="shop">
+			<div className="paper-grain" aria-hidden />
+
+			<header className="topbar">
+				<button type="button" className="brand" onClick={() => setCategory("All")}>
+					Indigo <span>Archive</span>
+				</button>
+				<nav className="nav-cats">
+					{CATEGORIES.map((c) => (
+						<button
+							key={c}
+							type="button"
+							className={category === c ? "active" : ""}
+							onClick={() => setCategory(c)}
+						>
+							{c}
+						</button>
+					))}
+				</nav>
+				<div className="topbar-right">
+					<span className="cart-pill">Bag {cartCount}</span>
 				</div>
 			</header>
 
-			<section className="panel">
-				<h2>New note</h2>
-				<form onSubmit={handleCreate} className="form">
-					<input
-						type="text"
-						placeholder="Title"
-						value={title}
-						onChange={(e) => setTitle(e.target.value)}
-						disabled={saving}
-						required
-					/>
-					<textarea
-						placeholder="Content (optional)"
-						value={content}
-						onChange={(e) => setContent(e.target.value)}
-						disabled={saving}
-						rows={3}
-					/>
-					<button type="submit" disabled={saving || !title.trim()}>
-						{saving ? "Saving…" : "Add note"}
-					</button>
-				</form>
+			<section className="hero-banner">
+				<div className="hero-text">
+					<p className="eyebrow">Worn in · Not worn out</p>
+					<h1>Jeans goods with a past</h1>
+					<p className="lede">
+						Wallets, keychains, jackets, and pants cut from real denim—vintage soul, everyday use. Small
+						batches, honest materials.
+					</p>
+				</div>
+				<div className="hero-stamp">
+					<span>EST.</span>
+					<strong>INDIGO</strong>
+					<span>MILL</span>
+				</div>
 			</section>
 
-			{error && <div className="error">{error}</div>}
-
-			<section className="panel">
-				<div className="panel-header">
-					<h2>Your notes</h2>
-					<button type="button" className="ghost" onClick={() => void loadNotes()} disabled={loading}>
-						Refresh
-					</button>
+			<main className="catalog">
+				<div className="catalog-head">
+					<h2>{category === "All" ? "The full rack" : category}</h2>
+					<p>{filtered.length} pieces</p>
 				</div>
 
-				{loading ? (
-					<p className="muted">Loading…</p>
-				) : notes.length === 0 ? (
-					<p className="muted">No notes yet. Create one above.</p>
-				) : (
-					<ul className="notes">
-						{notes.map((note) => (
-							<li key={note.id} className="note">
-								<div className="note-body">
-									<strong>{note.title}</strong>
-									{note.content && <p>{note.content}</p>}
-									<small className="muted">{new Date(note.created_at + "Z").toLocaleString()}</small>
+				<div className="grid">
+					{filtered.map((p) => (
+						<article key={p.id} className="card">
+							<button type="button" className="card-hit" onClick={() => setSelected(p)}>
+								<div
+									className="card-visual"
+									style={{ background: `linear-gradient(160deg, ${p.accent} 0%, #121212 95%)` }}
+								>
+									{p.tag && <span className="tag on-dark">{p.tag}</span>}
+									<span className="card-initial">{p.name.charAt(0)}</span>
 								</div>
-								<button type="button" className="danger" onClick={() => void handleDelete(note.id)}>
-									Delete
-								</button>
-							</li>
-						))}
-					</ul>
-				)}
+								<div className="card-body">
+									<p className="card-cat">{p.category}</p>
+									<h3>{p.name}</h3>
+									<p className="card-price">${p.price}</p>
+								</div>
+							</button>
+						</article>
+					))}
+				</div>
+			</main>
+
+			<section className="story">
+				<h2>Why denim lasts</h2>
+				<p>
+					Every piece starts as jean cloth—mill ends, repaired legs, or full cuts of rigid indigo. We keep
+					the hardware simple, the stitching strong, and the finish honest so your wallet, jacket, or
+					keychain picks up the same character as a favorite pair of pants.
+				</p>
 			</section>
+
+			<footer className="foot">
+				<p>Indigo Archive · Wallets · Keychains · Jackets · Pants · Goods</p>
+				<p className="muted">Vintage look, modern make · Demo storefront</p>
+			</footer>
 		</div>
 	);
 }
