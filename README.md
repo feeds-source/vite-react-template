@@ -1,24 +1,30 @@
 # React + Vite + Hono + Cloudflare Workers + D1 + Auth + OAuth
 
-Full-stack notes app with **D1**, **email/password auth**, and **GitHub + Google OAuth**.
+Femme / Silk Moments storefront: Vite + React on a Hono Worker, with D1 auth and GitHub + Google OAuth.
+
+**Deploy guide:** [DEPLOY.md](DEPLOY.md)
 
 ## Live on Cloudflare
 
-**App:** [https://vite-react-template.limefashion52.workers.dev](https://vite-react-template.limefashion52.workers.dev)
+| | |
+|--|--|
+| Store | [https://www.silkmoments.com](https://www.silkmoments.com) |
+| Worker | [https://vite-react-template.limefashion52.workers.dev](https://vite-react-template.limefashion52.workers.dev) |
+| Deploy | [Actions → Deploy to Cloudflare](https://github.com/feeds-source/vite-react-template/actions/workflows/deploy.yml) |
 
-GitHub Actions deploys this URL on every push to `main`. The storefront is live. **D1 is not bound yet** — connect `vite-react-db` in GitHub:
+Every push to `main` runs GitHub Actions → `wrangler deploy`.
 
-1. Cloudflare dashboard → **Workers & Pages** → **D1** → **vite-react-db** → copy **Database ID** (UUID)
-2. GitHub repo → **Settings → Secrets and variables → Actions** → add:
+To bind D1 (`vite-react-db`) for account/notes:
+
+1. Cloudflare → **Workers & Pages** → **D1** → **vite-react-db** → copy **Database ID**
+2. GitHub → **Settings → Secrets and variables → Actions**:
    - `CLOUDFLARE_API_TOKEN` — Workers Scripts **Edit** + **D1 Edit** on account `1e611220afd75688b509ba299e98bde7`
    - `D1_DATABASE_ID` — that UUID
-3. Re-run **Actions → Deploy to Cloudflare** (optional input: `d1_database_id`)
+3. Re-run **Actions → Deploy to Cloudflare**
 
-The workflow writes the ID into `wrangler.json`, applies migrations, and deploys with the `DB` binding.
+Full steps (domain, cache, laptop deploy, OAuth): **[DEPLOY.md](DEPLOY.md)**.
 
-Optional: [claim the temporary preview](https://dash.cloudflare.com/claim-preview?claimToken=GsXRRi8uIRdDljTuGYgQjOrUT0X7ZZnK5x9x9qoZl68) if you still want those resources merged in (expires about an hour after it was issued).
-
-OAuth worker secrets (`GITHUB_CLIENT_ID`, etc.) are still unset.
+OAuth worker secrets (`GITHUB_CLIENT_ID`, etc.) are still unset until you `wrangler secret put` them.
 
 ## Automated deploys
 
@@ -27,19 +33,19 @@ OAuth worker secrets (`GITHUB_CLIENT_ID`, etc.) are still unset.
 | Event | What happens |
 |--------|----------------|
 | Push to `main` / Run workflow | `npm ci` → ensure D1 → `npm run build` → D1 migrations (`--remote`) → `wrangler deploy` |
-| Pull request | Same build, then `wrangler versions upload` (preview URL, not production) |
+| Pull request | Same build, then `wrangler versions upload` (preview, not production) |
 
-Uses `cloudflare/wrangler-action@v4` with Wrangler **4.126.0**. Secret: `CLOUDFLARE_API_TOKEN` (Workers Edit + **D1 Edit**). Optional: `CLOUDFLARE_ACCOUNT_ID` if the token can access more than one account.
+Uses `cloudflare/wrangler-action@v4` with Wrangler **4.126.0**. Secret: `CLOUDFLARE_API_TOKEN`. Optional: `CLOUDFLARE_ACCOUNT_ID`.
 
-If you also connect **Workers Builds** in the Cloudflare dashboard, pick **either** that **or** this Actions workflow — not both — or every push will deploy twice.
+If you also connect **Workers Builds** in the Cloudflare dashboard, pick **either** that **or** this Actions workflow — not both.
 
 ## Features
 
+- Femme storefront (shop, bag, wishlist, currency, journal)
 - Email/password register & login
 - GitHub and Google OAuth
-- Session tokens (Bearer) with `requireAuth` middleware
+- Session tokens with `requireAuth`
 - Notes scoped per user
-- Dependency auditing (`npm audit` / `npm audit fix`) in CI
 - Auto-deploy to Cloudflare Workers
 
 ## Quick start
@@ -70,9 +76,11 @@ cp .dev.vars.example .dev.vars
    - Authorized redirect: `http://localhost:5173/api/auth/oauth/google/callback`
    - Put Client ID / Secret in `.dev.vars`
 
-4. Restart `npm run dev`. OAuth buttons appear when credentials are set.
+4. Restart `npm run dev`.
 
 ### Production secrets
+
+See [DEPLOY.md](DEPLOY.md#5-production-worker-secrets-oauth).
 
 ```bash
 npx wrangler secret put GITHUB_CLIENT_ID
@@ -82,11 +90,6 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put OAUTH_STATE_SECRET
 ```
 
-`APP_URL` in `wrangler.json` is set to `https://vite-react-template.unruly-bounce.workers.dev`. Update OAuth app callback URLs to match:
-
-- `https://vite-react-template.unruly-bounce.workers.dev/api/auth/oauth/github/callback`
-- `https://vite-react-template.unruly-bounce.workers.dev/api/auth/oauth/google/callback`
-
 ```bash
 npx wrangler d1 migrations apply vite-react-db --remote
 npm run build && npm run deploy
@@ -94,21 +97,15 @@ npm run build && npm run deploy
 
 ## Security / npm audit
 
-Lockfile is currently clean (**0** vulnerabilities) after upgrading `hono` to 4.13.5, `wrangler` to 4.126.0, and `@cloudflare/vite-plugin` to 1.54.0. Install does not fail on advisories (`.npmrc` `audit=false`); CI and the scripts below are the gate.
+Lockfile is currently clean after upgrading `hono` to 4.13.5, `wrangler` to 4.126.0, and `@cloudflare/vite-plugin` to 1.54.0.
 
 | Script | What it does |
 |--------|----------------|
-| `npm run audit` | Full tree; fails on **moderate+** (`audit-level=moderate`) |
+| `npm run audit` | Full tree; fails on **moderate+** |
 | `npm run audit:prod` | Production deps only; fails on **high+** |
-| `npm run audit:fix` | Apply compatible `npm audit fix` updates (never `--force`) |
+| `npm run audit:fix` | Compatible `npm audit fix` (never `--force`) |
 
-**CI gate** — [`.github/workflows/npm-audit.yml`](.github/workflows/npm-audit.yml) runs both audit jobs on every PR, push to `main`, and weekly.
-
-**Auto-fix PRs** — [`.github/workflows/npm-audit-fix.yml`](.github/workflows/npm-audit-fix.yml) runs `npm audit fix` every Monday, verifies `npm run build`, and opens/updates a `chore/npm-audit-fix` PR when the lockfile changes. Dispatch it anytime from **Actions → npm audit fix → Run workflow**.
-
-`--force` is intentionally omitted: it can jump major versions. Use that locally only when you mean to take a breaking upgrade.
-
-**Dependabot** — [`.github/dependabot.yml`](.github/dependabot.yml) opens weekly grouped PRs for npm (prod + dev, minor/patch) and GitHub Actions.
+CI: [`.github/workflows/npm-audit.yml`](.github/workflows/npm-audit.yml). Auto-fix PRs: [`.github/workflows/npm-audit-fix.yml`](.github/workflows/npm-audit-fix.yml).
 
 ## Auth API
 
@@ -130,23 +127,10 @@ All require `Authorization: Bearer <token>` and are scoped to the current user.
 ## Project structure
 
 ```
-├── .github/
-│   ├── dependabot.yml
-│   └── workflows/
-│       ├── deploy.yml
-│       ├── npm-audit.yml
-│       └── npm-audit-fix.yml
-├── .npmrc
+├── .github/workflows/deploy.yml
+├── DEPLOY.md
 ├── migrations/
-│   ├── 0001_init.sql
-│   ├── 0002_auth.sql
-│   └── 0003_oauth.sql
-├── src/
-│   ├── react-app/
-│   └── worker/
-│       ├── auth.ts      # sessions + requireAuth
-│       ├── oauth.ts     # GitHub / Google flows
-│       └── index.ts
-├── .dev.vars.example
+├── src/react-app/
+├── src/worker/
 └── wrangler.json
 ```
