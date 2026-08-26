@@ -41,7 +41,10 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .eyebrow { margin: 0 0 0.45rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.7rem; font-weight: 700; }
 .eyebrow.light, .lede.light { color: var(--gold-soft); }
 .lede { max-width: 38rem; color: var(--muted); font-size: 1.05rem; }
-.hero-slide { min-height: 520px; padding: 5.5rem 1.5rem 4rem; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 1180px; margin: 0 auto; }
+.hero { position: relative; overflow: hidden; min-height: 520px; background: #0b0610; }
+.hero-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.7s ease; }
+.hero-photo.on { opacity: 1; }
+.hero-slide { position: relative; z-index: 1; background: linear-gradient(90deg, rgba(11,6,16,0.78) 0%, rgba(11,6,16,0.28) 70%); min-height: 520px; padding: 5.5rem 1.5rem 4rem; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 1180px; margin: 0 auto; }
 .hero-slide h1 { margin: 0 0 1rem; color: var(--text-strong); font-family: var(--display); font-size: clamp(2.4rem, 6vw, 4.4rem); line-height: 1.05; font-weight: 600; font-style: italic; }
 .hero-dots { display: flex; gap: 0.4rem; margin-top: 1.6rem; }
 .hero-dots button { width: 10px; height: 10px; border-radius: 50%; border: 0; background: #544038; cursor: pointer; padding: 0; }
@@ -57,7 +60,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .card { position: relative; background: rgba(16, 8, 16, 0.75); border: 1px solid rgba(212, 176, 106, 0.18); overflow: hidden; }
 .wish-btn { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 2; border: 0; background: rgba(8,4,12,0.65); color: #f0dfb4; width: 32px; height: 32px; cursor: pointer; }
 .card-hit { display: block; width: 100%; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
-.card-visual { position: relative; height: 230px; background-size: cover; background-position: center; }
+.card-visual { position: relative; height: 230px; background: #160b16; overflow: hidden; }
+.card-visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .card-body { padding: 0.95rem 1rem 1.15rem; }
 .card-cat { margin: 0 0 0.2rem; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
 .card-body h3 { margin: 0 0 0.35rem; color: var(--text-strong); font-size: 1.05rem; }
