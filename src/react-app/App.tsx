@@ -9,14 +9,16 @@ type OrderItem = { product_id: string; name: string; qty: number; unit_cents: nu
 type OrderEmail = { id: number; kind: string; to_email: string; subject: string; body: string; status: string };
 type StoreOrder = {
   id: number; order_no: string; email: string; ship_name: string; ship_addr: string;
-  subtotal_cents: number; shipping_cents: number; total_cents: number; status: string;
-  tracking: string | null; items: OrderItem[]; emails?: OrderEmail[];
+  subtotal_cents: number; shipping_cents: number; pack_cents?: number; tax_cents?: number;
+  other_cents?: number; tax_label?: string; ship_country?: string; total_cents: number;
+  status: string; tracking: string | null; items: OrderItem[]; emails?: OrderEmail[];
 };
 
 const TOKEN_KEY = "femme_token";
 const CART_KEY = "femme_cart";
 const NEXT_KEY = "femme_next";
 const CATEGORIES = ["All", "Bras", "Panties", "Lingerie", "Shapewear", "Sleepwear", "Loungewear", "Thermal"] as const;
+const COUNTRIES = ["United Arab Emirates", "United Kingdom", "Pakistan", "United States", "Other"] as const;
 const photo = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=640&q=60`;
 const PRODUCTS: Product[] = [
   { id: "everyday-soft-bra", name: "Everyday Soft Cup Bra", category: "Bras", price: 42, description: "Wireless everyday bra.", tag: "Best seller", image: photo("photo-1515886657613-9f3515b0c78f") },
@@ -34,6 +36,24 @@ const PRODUCTS: Product[] = [
   { id: "thermal-set", name: "Soft Thermal Set", category: "Thermal", price: 68, description: "Warm layer set.", image: photo("photo-1487412720507-e7ab37603c6f") },
 ];
 
+function money(n: number) { return `$${n.toFixed(2)}`; }
+function moneyCents(c: number) { return money((c || 0) / 100); }
+function taxFor(addr: string, country: string) {
+  const blob = `${country} ${addr}`.toLowerCase();
+  if (/(ae|uae|united arab|dubai|abu dhabi)/.test(blob)) return { rate: 0.05, label: "UAE VAT 5%" };
+  if (/(gb|uk|united kingdom|england|scotland|wales)/.test(blob)) return { rate: 0.2, label: "UK VAT 20%" };
+  if (/(germany|france|italy|spain|netherlands|ireland|belgium|austria|sweden)/.test(blob)) return { rate: 0.2, label: "EU VAT 20%" };
+  return { rate: 0, label: "Duties & taxes (not charged)" };
+}
+function quoteCart(subtotal: number, qty: number, addr: string, country: string) {
+  const pack = qty <= 0 ? 0 : 2.95 + Math.max(0, qty - 1) * 0.85;
+  const ship = subtotal >= 100 ? 0 : 8;
+  const taxInfo = taxFor(addr, country);
+  const tax = Math.round(subtotal * taxInfo.rate * 100) / 100;
+  const other = qty <= 0 ? 0 : 1.5;
+  return { pack, ship, tax, taxLabel: taxInfo.label, other, total: subtotal + pack + ship + tax + other };
+}
+
 async function api<T>(path: string, opts: RequestInit & { token?: string | null } = {}) {
   const headers = new Headers(opts.headers);
   if (opts.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
@@ -41,6 +61,24 @@ async function api<T>(path: string, opts: RequestInit & { token?: string | null 
   const res = await fetch(path, { ...opts, headers });
   const data = (await res.json().catch(() => ({}))) as T;
   return { ok: res.ok, data };
+}
+
+function printSheet(title: string, bodyHtml: string) {
+  const w = window.open("", "_blank", "width=720,height=900");
+  if (!w) { window.alert("Allow pop-ups for this site to print the receipt."); return; }
+  w.document.write(`<!doctype html><html><head><title>${title}</title>
+    <style>
+      body{font-family:Georgia,serif;color:#1a0e08;padding:24px;max-width:640px;margin:0 auto}
+      h1{font-size:22px;letter-spacing:.18em;margin:0}
+      .muted{color:#5a4638;font-size:13px}
+      table{width:100%;border-collapse:collapse;margin:16px 0}
+      td,th{border-bottom:1px solid #ddd;padding:8px 0;text-align:left}
+      td.r,th.r{text-align:right}
+      .total td{font-weight:700;border-top:2px solid #1a0e08}
+    </style></head><body>${bodyHtml}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 250);
 }
 
 function App() {
@@ -64,6 +102,7 @@ function App() {
   const [authBusy, setAuthBusy] = useState(false);
   const [shipName, setShipName] = useState("");
   const [shipAddr, setShipAddr] = useState("");
+  const [shipCountry, setShipCountry] = useState<(typeof COUNTRIES)[number]>("United Arab Emirates");
   const [placed, setPlaced] = useState<StoreOrder | null>(null);
   const [myOrders, setMyOrders] = useState<StoreOrder[]>([]);
   const [adminOrders, setAdminOrders] = useState<StoreOrder[]>([]);
@@ -74,12 +113,9 @@ function App() {
 
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartTotal = cart.reduce((n, l) => n + l.product.price * l.qty, 0);
-  const shipUsd = cartTotal >= 100 ? 0 : 8;
-  const grandUsd = cartTotal + shipUsd;
+  const q = quoteCart(cartTotal, cartCount, shipAddr, shipCountry);
   const isAdmin = user?.role === "admin";
   const filtered = useMemo(() => category === "All" ? PRODUCTS : PRODUCTS.filter((p) => p.category === category), [category]);
-  const money = (n: number) => `$${n.toFixed(2)}`;
-  const moneyCents = (c: number) => money(c / 100);
 
   const refreshMe = useCallback(async (t: string | null) => {
     if (!t) { setUser(null); return; }
@@ -137,16 +173,10 @@ function App() {
   }
   async function loadAdminOrders(filter = adminFilter) {
     if (!token) return;
-    const q = filter === "all" ? "" : `?status=${filter}`;
-    const { ok, data } = await api<{ orders?: StoreOrder[]; error?: string }>(`/api/admin/orders${q}`, { token });
+    const qs = filter === "all" ? "" : `?status=${filter}`;
+    const { ok, data } = await api<{ orders?: StoreOrder[]; error?: string }>(`/api/admin/orders${qs}`, { token });
     if (ok) setAdminOrders(data.orders ?? []);
     else setAdminNotice(data.error ?? "Admin access needed");
-  }
-  async function claimAdmin() {
-    if (!token) return;
-    const { ok, data } = await api<{ user?: User; error?: string; claimed?: boolean }>("/api/admin/bootstrap", { method: "POST", token });
-    if (ok && data.user) { setUser(data.user); setView("admin"); setAdminNotice(data.claimed ? "You are now the store admin." : "Admin desk is ready."); await loadAdminOrders(); }
-    else setAdminNotice(data.error ?? "Could not open admin");
   }
   async function confirmCheckout(e: React.FormEvent) {
     e.preventDefault();
@@ -154,7 +184,7 @@ function App() {
     setAuthBusy(true); setAuthError("");
     const { ok, data } = await api<{ order?: StoreOrder; error?: string }>("/api/orders", {
       method: "POST", token,
-      body: JSON.stringify({ shipName, shipAddr, items: cart.map((l) => ({ id: l.product.id, qty: l.qty })) }),
+      body: JSON.stringify({ shipName, shipAddr, shipCountry, items: cart.map((l) => ({ id: l.product.id, qty: l.qty })) }),
     });
     setAuthBusy(false);
     if (!ok || !data.order) { setAuthError(data.error ?? "Could not place order"); return; }
@@ -173,6 +203,58 @@ function App() {
     setAdminNotice(`Dispatch email written for ${data.order?.order_no}`);
     if (data.dispatchEmail) setOpenEmail(data.dispatchEmail);
     await loadAdminOrders();
+  }
+
+  function totalsBlock(o?: StoreOrder) {
+    const product = o ? moneyCents(o.subtotal_cents) : money(cartTotal);
+    const pack = o ? moneyCents(o.pack_cents || 0) : money(q.pack);
+    const ship = o ? (o.shipping_cents === 0 ? "Free" : moneyCents(o.shipping_cents)) : (q.ship === 0 ? "Free" : money(q.ship));
+    const taxL = o?.tax_label || q.taxLabel;
+    const tax = o ? moneyCents(o.tax_cents || 0) : money(q.tax);
+    const other = o ? moneyCents(o.other_cents || 0) : money(q.other);
+    const total = o ? moneyCents(o.total_cents) : money(q.total);
+    return (
+      <ul className="receipt-lines totals">
+        <li><span>Product cost</span><strong>{product}</strong></li>
+        <li><span>Packaging (box $2.95 + $0.85/extra piece)</span><strong>{pack}</strong></li>
+        <li><span>Shipping {(!o && q.ship === 0) || o?.shipping_cents === 0 ? "(free over $100)" : ""}</span><strong>{ship}</strong></li>
+        <li><span>{taxL}</span><strong>{tax}</strong></li>
+        <li><span>Other charges (COD handling)</span><strong>{other}</strong></li>
+        <li className="grand"><span>Total due</span><strong>{total}</strong></li>
+      </ul>
+    );
+  }
+
+  function printOrder(o?: StoreOrder) {
+    const items = o
+      ? o.items.map((i) => `<tr><td>${i.qty} × ${i.name}</td><td class="r">${moneyCents(i.unit_cents * i.qty)}</td></tr>`).join("")
+      : cart.map((l) => `<tr><td>${l.qty} × ${l.product.name}</td><td class="r">${money(l.product.price * l.qty)}</td></tr>`).join("");
+    const name = o?.ship_name || shipName || "—";
+    const addr = o?.ship_addr || shipAddr || "—";
+    const country = o?.ship_country || shipCountry;
+    const no = o?.order_no || "PREVIEW";
+    const product = o ? o.subtotal_cents : Math.round(cartTotal * 100);
+    const pack = o ? (o.pack_cents || 0) : Math.round(q.pack * 100);
+    const ship = o ? o.shipping_cents : Math.round(q.ship * 100);
+    const tax = o ? (o.tax_cents || 0) : Math.round(q.tax * 100);
+    const other = o ? (o.other_cents || 0) : Math.round(q.other * 100);
+    const total = o ? o.total_cents : Math.round(q.total * 100);
+    const taxL = o?.tax_label || q.taxLabel;
+    printSheet(`Receipt ${no}`, `
+      <h1>FEMME</h1><p class="muted">Silk Atelier · info@silkmoments.com</p>
+      <p><strong>Receipt ${no}</strong>${o ? ` · ${o.status}` : " · preview"}</p>
+      <p>${name}<br/>${addr.replace(/\n/g, "<br/>")}<br/>${country}</p>
+      <table><thead><tr><th>Item</th><th class="r">Amount</th></tr></thead><tbody>${items}</tbody></table>
+      <table>
+        <tr><td>Product cost</td><td class="r">${moneyCents(product)}</td></tr>
+        <tr><td>Packaging</td><td class="r">${moneyCents(pack)}</td></tr>
+        <tr><td>Shipping</td><td class="r">${ship === 0 ? "Free" : moneyCents(ship)}</td></tr>
+        <tr><td>${taxL}</td><td class="r">${moneyCents(tax)}</td></tr>
+        <tr><td>Other charges (COD)</td><td class="r">${moneyCents(other)}</td></tr>
+        <tr class="total"><td>Total due</td><td class="r">${moneyCents(total)}</td></tr>
+      </table>
+      <p class="muted">Payment: cash on delivery. Packaging = $2.95 gift box + $0.85 per extra piece. Shipping free on product totals of $100+.</p>
+    `);
   }
 
   const receiptLines = (items: OrderItem[]) => items.map((i) => (
@@ -234,16 +316,18 @@ function App() {
       {!user ? <button type="button" className="text-link" onClick={() => setView("login")}>Sign in</button> : (
         <>
           <div className="account-actions">
-            {isAdmin ? <button type="button" className="cta" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin orders</button> : <button type="button" className="cta ghost" onClick={() => void claimAdmin()}>Open admin desk</button>}
+            {isAdmin && <button type="button" className="cta" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin orders</button>}
             <button type="button" className="cta ghost" onClick={() => void handleLogout()}>Sign out</button>
           </div>
-          {adminNotice && <p className="muted">{adminNotice}</p>}
           <h2 className="section-title">My orders</h2>
           {myOrders.length === 0 ? <p className="muted">No orders yet.</p> : (
             <ul className="order-list">{myOrders.map((o) => (
-              <li key={o.id} className="order-card"><strong>{o.order_no}</strong> <span className={`status ${o.status}`}>{o.status}</span>
+              <li key={o.id} className="order-card">
+                <strong>{o.order_no}</strong> <span className={`status ${o.status}`}>{o.status}</span>
                 <ul className="receipt-lines">{receiptLines(o.items)}</ul>
+                {totalsBlock(o)}
                 {o.tracking && <p className="muted">Tracking {o.tracking}</p>}
+                <button type="button" className="cta ghost" onClick={() => printOrder(o)}>Print receipt</button>
               </li>
             ))}</ul>
           )}
@@ -266,9 +350,10 @@ function App() {
           <ul className="cart-list">{cart.map((l) => <li key={l.product.id}><div className="cart-swatch" style={{ backgroundImage: `url(${l.product.image})` }} /><div><strong>{l.product.name}</strong></div>
             <div className="qty"><button type="button" onClick={() => setQty(l.product.id, l.qty - 1)}>-</button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.product.id, l.qty + 1)}>+</button></div>
             <button type="button" className="text-link" onClick={() => setQty(l.product.id, 0)}>Remove</button></li>)}</ul>
-          <aside className="cart-sum"><p>Subtotal <strong>{money(cartTotal)}</strong></p>
-            <p className="muted">Next you will see the receipt. You can still add or remove pieces before confirming.</p>
-            <button type="button" className="cta" onClick={() => { localStorage.setItem(NEXT_KEY, "checkout"); setPlaced(null); setView("checkout"); }}>Review receipt</button></aside>
+          <aside className="cart-sum">
+            {totalsBlock()}
+            <button type="button" className="cta" onClick={() => { localStorage.setItem(NEXT_KEY, "checkout"); setPlaced(null); setView("checkout"); }}>Review receipt</button>
+          </aside>
         </div>
       )}
     </main>);
@@ -281,13 +366,14 @@ function App() {
       {placed ? (
         <section className="receipt-sheet">
           <p className="lede">Thank you. Order <strong>{placed.order_no}</strong> is with the atelier.</p>
-          <p className="muted">{placed.ship_name}<br />{placed.ship_addr}</p>
+          <p className="muted">{placed.ship_name}<br />{placed.ship_addr}<br />{placed.ship_country}</p>
           <ul className="receipt-lines">{receiptLines(placed.items)}</ul>
-          <p>Total <strong>{moneyCents(placed.total_cents)}</strong></p>
+          {totalsBlock(placed)}
           <span className={`status ${placed.status}`}>{placed.status}</span>
           <div className="account-actions">
-            <button type="button" className="cta" onClick={() => goShop()}>Add more products</button>
-            <button type="button" className="cta ghost" onClick={() => setView("account")}>My orders</button>
+            <button type="button" className="cta" onClick={() => printOrder(placed)}>Print receipt</button>
+            <button type="button" className="cta ghost" onClick={() => goShop()}>Add more products</button>
+            <button type="button" className="text-link" onClick={() => setView("account")}>My orders</button>
           </div>
         </section>
       ) : (
@@ -309,10 +395,15 @@ function App() {
               <form className="contact-form" onSubmit={(e) => void confirmCheckout(e)}>
                 <p className="muted">Signed in as <strong>{user.email}</strong></p>
                 <label>Full name<input required value={shipName} onChange={(e) => setShipName(e.target.value)} /></label>
+                <label>Country
+                  <select value={shipCountry} onChange={(e) => setShipCountry(e.target.value as (typeof COUNTRIES)[number])}>
+                    {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
                 <label>Delivery address<textarea required rows={3} value={shipAddr} onChange={(e) => setShipAddr(e.target.value)} /></label>
                 <p className="muted">Cash on delivery. Confirm only after the receipt looks right.</p>
                 {authError && <p className="auth-error">{authError}</p>}
-                <button type="submit" className="cta" disabled={authBusy || cart.length === 0}>{authBusy ? "Placing…" : `Confirm order · ${money(grandUsd)}`}</button>
+                <button type="submit" className="cta" disabled={authBusy || cart.length === 0}>{authBusy ? "Placing…" : `Confirm order · ${money(q.total)}`}</button>
               </form>
             )}
           </div>
@@ -328,10 +419,11 @@ function App() {
                 </li>
               ))}</ul>
             )}
-            <p>Subtotal <strong>{money(cartTotal)}</strong></p>
-            <p>Shipping <strong>{shipUsd === 0 ? "Free" : money(shipUsd)}</strong></p>
-            <p>Total <strong>{money(grandUsd)}</strong></p>
-            <button type="button" className="cta ghost" onClick={() => goShop()}>Add more products</button>
+            {totalsBlock()}
+            <div className="account-actions">
+              <button type="button" className="cta ghost" onClick={() => printOrder()}>Print receipt</button>
+              <button type="button" className="text-link" onClick={() => goShop()}>Add more products</button>
+            </div>
           </aside>
         </div>
       )}
@@ -343,9 +435,7 @@ function App() {
       <p className="eyebrow">Atelier desk</p>
       <h1 className="page-title">Orders received</h1>
       {!user ? <button type="button" className="text-link" onClick={() => setView("login")}>Sign in</button> : !isAdmin ? (
-        <div><p className="lede">First signed-in shopper can claim the admin desk if none exists yet.</p>
-          <button type="button" className="cta" onClick={() => void claimAdmin()}>Claim admin desk</button>
-          {adminNotice && <p className="muted">{adminNotice}</p>}</div>
+        <p className="lede">This desk is limited to the store owner.</p>
       ) : (
         <>
           <div className="nav-cats">{(["all", "received", "confirmed", "dispatched"] as const).map((f) => (
@@ -360,11 +450,12 @@ function App() {
                 <div className="account-actions">
                   {o.status === "received" && <button type="button" className="cta" onClick={() => void adminConfirm(o.id)}>Confirm order</button>}
                   {o.status !== "dispatched" && <button type="button" className="cta ghost" onClick={() => void adminDispatch(o.id)}>Dispatch & email</button>}
+                  <button type="button" className="text-link" onClick={() => printOrder(o)}>Print</button>
                 </div>
               </div>
               <ul className="receipt-lines">{receiptLines(o.items)}</ul>
+              {totalsBlock(o)}
               {o.tracking && <p className="muted">Tracking {o.tracking}</p>}
-              {o.emails?.[0] && <button type="button" className="text-link" onClick={() => setOpenEmail(o.emails![0])}>View last email</button>}
             </li>
           ))}</ul>
         </>
