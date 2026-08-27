@@ -6,10 +6,21 @@ import {
 	destroySession,
 	generateToken,
 	hashPassword,
+	requireAdmin,
 	requireAuth,
+	resolveRole,
 	verifyPassword,
 } from "./auth";
 import { buildAuthorizeUrl, handleOAuthCallback, type OAuthProvider } from "./oauth";
+import {
+	bootstrapAdmin,
+	confirmOrder,
+	createOrder,
+	dispatchOrder,
+	getMyOrder,
+	listAdminOrders,
+	listMyOrders,
+} from "./orders";
 
 type Note = {
 	id: number;
@@ -143,7 +154,19 @@ app.post("/api/auth/logout", requireAuth, async (c) => {
 	return c.json({ ok: true });
 });
 
-app.get("/api/auth/me", requireAuth, (c) => c.json({ user: c.get("user") }));
+app.get("/api/auth/me", requireAuth, (c) => {
+	const user = c.get("user");
+	return c.json({ user: { ...user, role: resolveRole(c.env, user) } });
+});
+
+app.post("/api/orders", requireAuth, (c) => createOrder(c));
+app.get("/api/orders", requireAuth, (c) => listMyOrders(c));
+app.get("/api/orders/:id", requireAuth, (c) => getMyOrder(c));
+
+app.post("/api/admin/bootstrap", requireAuth, (c) => bootstrapAdmin(c));
+app.get("/api/admin/orders", requireAuth, requireAdmin, (c) => listAdminOrders(c));
+app.post("/api/admin/orders/:id/confirm", requireAuth, requireAdmin, (c) => confirmOrder(c));
+app.post("/api/admin/orders/:id/dispatch", requireAuth, requireAdmin, (c) => dispatchOrder(c));
 
 const OAUTH_PROVIDERS = new Set<OAuthProvider>(["github", "google"]);
 
