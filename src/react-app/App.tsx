@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-type View = "home" | "shop" | "product" | "about" | "contact" | "cart" | "checkout" | "login" | "register" | "account" | "wishlist" | "blog" | "post";
+type View = "home" | "shop" | "product" | "about" | "contact" | "cart" | "checkout" | "login" | "register" | "forgot" | "reset" | "account" | "wishlist" | "blog" | "post";
 type Product = { id: string; name: string; category: string; price: number; compareAt?: number; description: string; tag?: string; accent: string; image: string };
 type User = { id: number; email: string };
 type Note = { id: number; title: string; content: string };
@@ -106,6 +106,8 @@ function App() {
   const [placed, setPlaced] = useState(false);
   const [shipName, setShipName] = useState("");
   const [shipAddr, setShipAddr] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
 
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartTotal = cart.reduce((n, l) => n + l.product.price * l.qty, 0);
@@ -141,6 +143,8 @@ function App() {
       window.history.replaceState({}, "", "/");
     }
     if (params.get("auth_error")) { setAuthError(params.get("auth_error")!); setView("checkout"); window.history.replaceState({}, "", "/"); }
+    const resetFromLink = params.get("reset_token");
+    if (resetFromLink) { setResetToken(resetFromLink); setView("reset"); window.history.replaceState({}, "", "/"); }
   }, []);
   useEffect(() => { void refreshMe(token); }, [token, refreshMe]);
   useEffect(() => { localStorage.setItem(WISH_KEY, JSON.stringify(wish)); }, [wish]);
@@ -181,6 +185,25 @@ function App() {
     const next = localStorage.getItem(NEXT_KEY);
     localStorage.removeItem(NEXT_KEY);
     setView(next === "checkout" ? "checkout" : "account");
+  }
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setAuthError(""); setAuthNotice(""); setAuthBusy(true);
+    const { ok, data } = await api<{ error?: string; resetToken?: string }>("/api/auth/forgot", { method: "POST", body: JSON.stringify({ email: authEmail }) });
+    setAuthBusy(false);
+    if (!ok) { setAuthError(data.error ?? "Could not start reset"); return; }
+    if (data.resetToken) { setResetToken(data.resetToken); setView("reset"); setAuthNotice("Enter a new password for this account."); }
+    else setAuthNotice("If that email is registered, you can set a new password next.");
+  }
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    setAuthError(""); setAuthBusy(true);
+    const { ok, data } = await api<{ token?: string; error?: string }>("/api/auth/reset", { method: "POST", body: JSON.stringify({ token: resetToken, password: authPassword }) });
+    setAuthBusy(false);
+    if (!ok || !data.token) { setAuthError(data.error ?? "Reset failed"); return; }
+    persistToken(data.token); setAuthPassword(""); setResetToken("");
+    setView(localStorage.getItem(NEXT_KEY) === "checkout" ? "checkout" : "account");
+    localStorage.removeItem(NEXT_KEY);
   }
   async function handleLogout() {
     if (token) await api("/api/auth/logout", { method: "POST", token });
@@ -266,6 +289,33 @@ function App() {
         <button type="submit" className="cta" disabled={authBusy}>{isLogin ? "Sign in" : "Create account"}</button>
       </form>
       <div className="oauth-row"><a className="cta google" href="/api/auth/oauth/google?next=account" onClick={() => localStorage.setItem(NEXT_KEY, "account")}>Continue with Google</a><a className="cta ghost" href="/api/auth/oauth/github?next=account">GitHub</a></div>
+      <p className="auth-links">
+        {isLogin ? <button type="button" className="text-link" onClick={() => { setView("register"); setAuthError(""); }}>Create a new account</button> : <button type="button" className="text-link" onClick={() => { setView("login"); setAuthError(""); }}>Already have an account? Sign in</button>}
+        <button type="button" className="text-link" onClick={() => { setView("forgot"); setAuthError(""); setAuthNotice(""); }}>Forgot password</button>
+      </p>
+    </main>);
+  }
+  if (view === "forgot") {
+    return shell(<main className="page"><h1 className="page-title">Reset password</h1>
+      <p className="lede">Enter the email on your account. New shoppers can register instead.</p>
+      <form className="contact-form" onSubmit={(e) => void handleForgot(e)}>
+        <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
+        {authError && <p className="auth-error">{authError}</p>}
+        {authNotice && <p className="muted">{authNotice}</p>}
+        <button type="submit" className="cta" disabled={authBusy}>{authBusy ? "Please wait…" : "Continue"}</button>
+      </form>
+      <p className="auth-links"><button type="button" className="text-link" onClick={() => setView("login")}>Back to sign in</button><button type="button" className="text-link" onClick={() => setView("register")}>Create account</button></p>
+    </main>);
+  }
+  if (view === "reset") {
+    return shell(<main className="page"><h1 className="page-title">Choose a new password</h1>
+      <form className="contact-form" onSubmit={(e) => void handleReset(e)}>
+        <label>Reset code<input required value={resetToken} onChange={(e) => setResetToken(e.target.value)} /></label>
+        <label>New password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
+        {authError && <p className="auth-error">{authError}</p>}
+        {authNotice && <p className="muted">{authNotice}</p>}
+        <button type="submit" className="cta" disabled={authBusy}>{authBusy ? "Saving…" : "Update password"}</button>
+      </form>
     </main>);
   }
   if (view === "account") {
@@ -318,6 +368,7 @@ function App() {
                     {authError && <p className="auth-error">{authError}</p>}
                     <button type="submit" className="cta" disabled={authBusy}>{authBusy ? "Please wait…" : authMode === "login" ? "Sign in & continue" : "Create account & continue"}</button>
                   </form>
+                  <p className="auth-links"><button type="button" className="text-link" onClick={() => { localStorage.setItem(NEXT_KEY, "checkout"); setView("forgot"); }}>Forgot password</button></p>
                 </section>
               ) : (
                 <section>
