@@ -66,7 +66,6 @@ export async function verifyPassword(password: string, stored: string): Promise<
 	);
 	const actual = bytesToHex(new Uint8Array(derived));
 	if (actual.length !== expected.length) return false;
-	// Constant-time compare
 	let diff = 0;
 	for (let i = 0; i < actual.length; i++) {
 		diff |= actual.charCodeAt(i) ^ expected.charCodeAt(i);
@@ -90,7 +89,6 @@ function extractBearer(header: string | undefined): string | null {
 	return m?.[1]?.trim() || null;
 }
 
-/** Require a valid session. Sets c.get('user'). */
 export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 	const token = extractBearer(c.req.header("Authorization"));
 	if (!token) {
@@ -110,7 +108,6 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 		return c.json({ error: "Unauthorized", message: "Invalid session" }, 401);
 	}
 
-	// expires_at stored as UTC datetime string
 	if (new Date(row.expires_at + "Z") < new Date()) {
 		await c.env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(token).run();
 		return c.json({ error: "Unauthorized", message: "Session expired" }, 401);
@@ -120,7 +117,6 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 	await next();
 };
 
-/** Optional auth — sets user if token is valid, otherwise continues. */
 export const optionalAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 	const token = extractBearer(c.req.header("Authorization"));
 	if (token) {
@@ -145,8 +141,8 @@ export function resolveRole(env: Env, user: AuthUser): string {
 		.split(",")
 		.map((s) => s.trim().toLowerCase())
 		.filter(Boolean);
-	if (user.role === "admin" || listed.includes(user.email.toLowerCase())) return "admin";
-	return user.role || "customer";
+	if (listed.includes(user.email.toLowerCase())) return "admin";
+	return "customer";
 }
 
 export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
