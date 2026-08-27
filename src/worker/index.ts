@@ -13,7 +13,6 @@ import {
 } from "./auth";
 import { buildAuthorizeUrl, handleOAuthCallback, type OAuthProvider } from "./oauth";
 import {
-	bootstrapAdmin,
 	confirmOrder,
 	createOrder,
 	dispatchOrder,
@@ -163,7 +162,6 @@ app.post("/api/orders", requireAuth, (c) => createOrder(c));
 app.get("/api/orders", requireAuth, (c) => listMyOrders(c));
 app.get("/api/orders/:id", requireAuth, (c) => getMyOrder(c));
 
-app.post("/api/admin/bootstrap", requireAuth, (c) => bootstrapAdmin(c));
 app.get("/api/admin/orders", requireAuth, requireAdmin, (c) => listAdminOrders(c));
 app.post("/api/admin/orders/:id/confirm", requireAuth, requireAdmin, (c) => confirmOrder(c));
 app.post("/api/admin/orders/:id/dispatch", requireAuth, requireAdmin, (c) => dispatchOrder(c));
