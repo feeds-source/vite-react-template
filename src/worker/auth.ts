@@ -3,6 +3,7 @@ import type { MiddlewareHandler } from "hono";
 export type AuthUser = {
 	id: number;
 	email: string;
+	role: string;
 };
 
 export type AppEnv = {
@@ -97,13 +98,13 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 	}
 
 	const row = await c.env.DB.prepare(
-		`SELECT s.token, s.expires_at, u.id AS user_id, u.email
+		`SELECT s.token, s.expires_at, u.id AS user_id, u.email, COALESCE(u.role, 'customer') AS role
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token = ?`,
 	)
 		.bind(token)
-		.first<{ token: string; expires_at: string; user_id: number; email: string }>();
+		.first<{ token: string; expires_at: string; user_id: number; email: string; role: string }>();
 
 	if (!row) {
 		return c.json({ error: "Unauthorized", message: "Invalid session" }, 401);
@@ -115,7 +116,7 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 		return c.json({ error: "Unauthorized", message: "Session expired" }, 401);
 	}
 
-	c.set("user", { id: row.user_id, email: row.email });
+	c.set("user", { id: row.user_id, email: row.email, role: row.role || "customer" });
 	await next();
 };
 
@@ -124,18 +125,36 @@ export const optionalAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 	const token = extractBearer(c.req.header("Authorization"));
 	if (token) {
 		const row = await c.env.DB.prepare(
-			`SELECT s.expires_at, u.id AS user_id, u.email
+			`SELECT s.expires_at, u.id AS user_id, u.email, COALESCE(u.role, 'customer') AS role
        FROM sessions s
        JOIN users u ON u.id = s.user_id
        WHERE s.token = ?`,
 		)
 			.bind(token)
-			.first<{ expires_at: string; user_id: number; email: string }>();
+			.first<{ expires_at: string; user_id: number; email: string; role: string }>();
 
 		if (row && new Date(row.expires_at + "Z") >= new Date()) {
-			c.set("user", { id: row.user_id, email: row.email });
+			c.set("user", { id: row.user_id, email: row.email, role: row.role || "customer" });
 		}
 	}
+	await next();
+};
+
+export function resolveRole(env: Env, user: AuthUser): string {
+	const listed = (env.ADMIN_EMAILS || "")
+		.split(",")
+		.map((s) => s.trim().toLowerCase())
+		.filter(Boolean);
+	if (user.role === "admin" || listed.includes(user.email.toLowerCase())) return "admin";
+	return user.role || "customer";
+}
+
+export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
+	const user = c.get("user");
+	if (!user || resolveRole(c.env, user) !== "admin") {
+		return c.json({ error: "Forbidden", message: "Admin only" }, 403);
+	}
+	c.set("user", { ...user, role: "admin" });
 	await next();
 };
 
