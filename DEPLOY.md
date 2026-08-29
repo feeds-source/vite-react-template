@@ -1,17 +1,20 @@
 # Deploy Femme / Silk Moments
 
-Stack: **Vite + React** storefront + **Hono Worker** API on **Cloudflare Workers**, shipped by **GitHub Actions**.
+Stack: **Vite + React** storefront + **Hono Worker** API on **Cloudflare Workers**, shipped by **GitHub Actions**. Share-card and home-screen previews also ship to **Cloudflare Pages**.
 
 | Environment | URL |
 |-------------|-----|
 | Production Worker | https://vite-react-template.limefashion52.workers.dev |
 | Custom domain | https://www.silkmoments.com |
+| Pages (CI) | https://silkmoments.pages.dev |
 | Repo | https://github.com/feeds-source/vite-react-template |
-| Workflow | [Deploy to Cloudflare](https://github.com/feeds-source/vite-react-template/actions/workflows/deploy.yml) |
+| Worker workflow | [Deploy to Cloudflare](https://github.com/feeds-source/vite-react-template/actions/workflows/deploy.yml) |
+| Pages workflow | [Deploy to Cloudflare Pages](https://github.com/feeds-source/vite-react-template/actions/workflows/pages.yml) |
 | D1 only | [Apply D1 migrations](https://github.com/feeds-source/vite-react-template/actions/workflows/d1-migrate.yml) |
 
 Cloudflare account ID: `1e611220afd75688b509ba299e98bde7`  
 Worker name: `vite-react-template`  
+Pages project: `silkmoments`  
 D1 database: `vite-react-db` (`0e2f9300-7343-4825-9e90-cb525bcba172`)
 
 ---
@@ -22,13 +25,13 @@ Repo → **Settings → Secrets and variables → Actions**
 
 | Name | Required | Purpose |
 |------|----------|---------|
-| `CLOUDFLARE_API_TOKEN` | Yes | **Workers Scripts Edit** + **Account → D1 → Edit** |
+| `CLOUDFLARE_API_TOKEN` | Yes | **Workers Scripts Edit** + **Account → Cloudflare Pages → Edit** + **Account → D1 → Edit** |
 | `D1_DATABASE_ID` | Recommended | `0e2f9300-7343-4825-9e90-cb525bcba172` |
 | `CLOUDFLARE_ACCOUNT_ID` | Optional | Defaults to `1e611220afd75688b509ba299e98bde7` |
 
-Create the token: **My Profile → API Tokens → Create Token → Edit Cloudflare Workers**, then add **Account → D1 → Edit**.
+Create the token: **My Profile → API Tokens → Create Token → Edit Cloudflare Workers**, then add **Account → D1 → Edit** and **Account → Cloudflare Pages → Edit**.
 
-Do **not** enable Cloudflare **Workers Builds** on the same repo while this workflow is on.
+Do **not** enable Cloudflare **Workers Builds** or the dashboard **Pages Git integration** on this repo while these workflows are on — they would double-deploy.
 
 ---
 
@@ -42,7 +45,23 @@ Hard-refresh https://www.silkmoments.com/?v=now after the run is green.
 
 ---
 
-## 3. Custom domain
+## 3. Cloudflare Pages CI
+
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds the storefront and **direct-uploads** it to Pages with Wrangler (`pages deploy dist/client`).
+
+| Event | What ships |
+|-------|------------|
+| Push / merge to `main` | Production Pages at https://silkmoments.pages.dev |
+| Pull request | Preview `*.silkmoments.pages.dev` + a comment on the PR |
+| workflow_dispatch | Same as the branch you run it on |
+
+`/api/*` on Pages is proxied to the production Worker so checkout and sign-in still hit D1. **www.silkmoments.com stays on the Worker** — do not attach that hostname to the Pages project.
+
+First run creates the `silkmoments` Pages project (`production-branch=main`) if it is missing.
+
+---
+
+## 4. Custom domain
 
 Workers → `vite-react-template` → **Domains & Routes** → add `www.silkmoments.com`.
 
@@ -54,13 +73,19 @@ SSL/TLS: **Full (strict)**. Purge cache if the HTML is stale.
 
 ---
 
-## 4. Laptop deploy
+## 5. Laptop deploy
 
 ```bash
 npm ci
 npx wrangler login
 npm run db:migrate:remote
 npm run build && npm run deploy
+```
+
+Pages only (after a local build):
+
+```bash
+npx wrangler pages deploy dist/client --project-name=silkmoments
 ```
 
 Local:
@@ -72,7 +97,7 @@ npm run dev
 
 ---
 
-## 5. D1 migrations
+## 6. D1 migrations
 
 Files live in [`migrations/`](migrations/README.md). Wrangler tracks them in the remote `d1_migrations` table.
 
@@ -95,7 +120,7 @@ If apply fails with “database not found”, set GitHub secret `D1_DATABASE_ID`
 
 ---
 
-## 6. Production Worker secrets (OAuth)
+## 7. Production Worker secrets (OAuth)
 
 ```bash
 npx wrangler secret put GITHUB_CLIENT_ID
@@ -112,8 +137,10 @@ Callbacks:
 
 ---
 
-## 7. Check a deploy
+## 8. Check a deploy
 
-1. Actions run is **success** (including **Apply D1 migrations**).
-2. New `/assets/index-….js` hash in the HTML.
-3. `/api/` responds on the Worker.
+1. **Deploy to Cloudflare** is success (including **Apply D1 migrations**).
+2. **Deploy to Cloudflare Pages** is success (`silkmoments.pages.dev`).
+3. New `/assets/index-….js` hash in the HTML.
+4. `/api/` responds on the Worker.
+5. `/og.jpg` and `/manifest.webmanifest` 200 on both the Worker and Pages.
