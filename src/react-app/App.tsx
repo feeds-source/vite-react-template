@@ -6,8 +6,12 @@ import { FOOTER_AISLES } from "./data/footer";
 import { ShopView } from "./pages/ShopView";
 import { SizesView } from "./pages/SizesView";
 import { AtelierView } from "./pages/AtelierView";
+import { SearchView } from "./pages/SearchView";
+import { SearchModal } from "./pages/SearchModal";
+import { searchHouse } from "./data/search";
+import type { PageHit } from "./data/search";
 
-type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact" | "sizes";
+type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact" | "sizes" | "search";
 type User = { id: number; email: string; role?: string };
 type CartLine = { product: Product; qty: number; size: string };
 type OrderItem = { product_id: string; name: string; qty: number; unit_cents: number };
@@ -70,8 +74,12 @@ function printSheet(title: string, bodyHtml: string) {
 }
 
 
-function pathFor(view: View, opts?: { cat?: string; product?: Product | null }): string {
+function pathFor(view: View, opts?: { cat?: string; product?: Product | null; q?: string }): string {
   if (view === "home") return "/";
+  if (view === "search") {
+    const q = opts?.q?.trim();
+    return q ? `/search?q=${encodeURIComponent(q)}` : "/search";
+  }
   if (view === "shop") {
     const cat = opts?.cat;
     return cat && cat !== "All" ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop";
@@ -89,20 +97,22 @@ function pathFor(view: View, opts?: { cat?: string; product?: Product | null }):
   return "/";
 }
 
-function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; product: Product | null } {
+function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; product: Product | null; q: string } {
   const url = new URL(window.location.href);
   const path = url.pathname.replace(/\/+$/, "") || "/";
   const catParam = url.searchParams.get("cat");
+  const q = url.searchParams.get("q") || "";
   const cat = CATEGORIES.includes(catParam as (typeof CATEGORIES)[number])
     ? (catParam as (typeof CATEGORIES)[number])
     : "All";
-  if (path === "/shop") return { view: "shop", cat, product: null };
+  if (path === "/search") return { view: "search", cat, product: null, q };
+  if (path === "/shop") return { view: "shop", cat, product: null, q };
   if (path.startsWith("/shop/")) {
     const id = decodeURIComponent(path.slice("/shop/".length));
     const product = PRODUCTS.find((p) => p.id === id) ?? null;
     return product
-      ? { view: "product", cat: product.category, product }
-      : { view: "shop", cat, product: null };
+      ? { view: "product", cat: product.category, product, q }
+      : { view: "shop", cat, product: null, q };
   }
   const map: Record<string, View> = {
     "/size-guide": "sizes",
@@ -117,7 +127,7 @@ function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; produc
     "/account": "account",
     "/admin": "admin",
   };
-  return { view: map[path] ?? "home", cat, product: null };
+  return { view: map[path] ?? "home", cat, product: null, q };
 }
 
 function App() {
@@ -151,6 +161,8 @@ function App() {
   const [adminNotice, setAdminNotice] = useState("");
   const [openEmail, setOpenEmail] = useState<OrderEmail | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(boot.q);
 
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartTotal = cart.reduce((n, l) => n + l.product.price * l.qty, 0);
@@ -188,6 +200,7 @@ function App() {
       setViewRaw(loc.view);
       setCategory(loc.cat);
       setSelected(loc.product);
+      setSearchQuery(loc.q);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -198,12 +211,14 @@ function App() {
     setToken(t);
   }
 
-  function go(next: View, extra?: { cat?: (typeof CATEGORIES)[number]; product?: Product | null }) {
+  function go(next: View, extra?: { cat?: (typeof CATEGORIES)[number]; product?: Product | null; q?: string }) {
     if (extra?.cat) setCategory(extra.cat);
     if (extra && "product" in extra) setSelected(extra.product ?? null);
+    if (extra && "q" in extra && extra.q != null) setSearchQuery(extra.q);
     setViewRaw(next);
     setMenuOpen(false);
-    const url = pathFor(next, { cat: extra?.cat ?? category, product: extra && "product" in extra ? extra.product : next === "product" ? selected : null });
+    setSearchOpen(false);
+    const url = pathFor(next, { cat: extra?.cat ?? category, product: extra && "product" in extra ? extra.product : next === "product" ? selected : null, q: extra?.q ?? (next === "search" ? searchQuery : undefined) });
     const now = `${window.location.pathname}${window.location.search}`;
     if (now !== url) window.history.pushState({ view: next }, "", url);
   }
@@ -326,7 +341,15 @@ function App() {
     <li key={i.product_id}><span>{i.qty} × {i.name}</span><strong>{moneyCents(i.unit_cents * i.qty)}</strong></li>
   ));
 
+  function goPage(href: PageHit["href"]) {
+    if (href === "/size-guide") go("sizes");
+    else if (href === "/atelier") go("about");
+    else go("contact");
+  }
+
   const header = (
+    <>
+    <div className="announcement-bar" role="region" aria-label="Announcement">Complimentary atelier packaging on all orders · Worldwide delivery</div>
     <header className="topbar">
       <button type="button" className="brand" onClick={() => setView("home")}>FEMME<small>Silk Atelier</small></button>
       <nav className={`nav ${menuOpen ? "open" : ""}`}>
@@ -337,6 +360,7 @@ function App() {
         <button type="button" onClick={() => setView("contact")}>Contact</button>
       </nav>
       <div className="topbar-right">
+        <button type="button" className="icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search the atelier">Search</button>
         {isAdmin && <button type="button" className="icon-btn" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Orders</button>}
         {user ? <button type="button" className="icon-btn" onClick={() => setView("account")}>Account</button> : (
           <>
@@ -348,6 +372,16 @@ function App() {
         <button type="button" className="burger" onClick={() => setMenuOpen((o) => !o)}>Menu</button>
       </div>
     </header>
+    <SearchModal
+      open={searchOpen}
+      initialQuery={searchQuery}
+      onClose={() => setSearchOpen(false)}
+      onProduct={(p) => go("product", { product: p })}
+      onAisle={(c) => goShop(c)}
+      onPage={goPage}
+      onSubmit={(q) => go("search", { q })}
+    />
+    </>
   );
   const footer = (
     <footer className="foot atelier-foot">
@@ -552,8 +586,10 @@ function App() {
 
   if (view === "about") return <div className="store">{header}<AtelierView onShop={(c) => goShop(c ?? "All")} onSizes={() => go("sizes")} />{footer}</div>;
   if (view === "contact") return shell(<main className="page"><h1 className="page-title">Contact</h1><p className="muted">info@silkmoments.com</p></main>);
+  const searchHits = searchHouse(searchQuery, 48);
+  const gridProducts = view === "search" ? searchHits.products : filtered;
   const productGrid = (
-      <div className="grid shop-grid">{filtered.map((p) => (
+      <div className="grid shop-grid">{gridProducts.map((p) => (
         <article key={p.id} className="card product-tile">
           <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
             <div className="card-visual">
@@ -643,6 +679,9 @@ function App() {
     </div>;
   }
 
+  if (view === "search") {
+    return <div className="store">{header}<SearchView query={searchQuery} onQuery={(q) => go("search", { q })} onAisle={goShop} onPage={goPage}>{productGrid}</SearchView>{footer}</div>;
+  }
   if (view === "shop") {
     return <div className="store">{header}<ShopView category={category} count={filtered.length} productGrid={productGrid} onCat={goShop} onSizes={() => go("sizes")} />{footer}</div>;
   }
