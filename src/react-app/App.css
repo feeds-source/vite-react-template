@@ -131,6 +131,72 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .order-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
 .email-preview { margin: 1rem 0; padding: 1rem; border: 1px solid rgba(212, 176, 106, 0.28); background: #120814; }
 .email-preview pre { white-space: pre-wrap; color: var(--gold-soft); font-size: 0.85rem; }
+
+html, body, .store { overflow-x: clip; }
+h1, h2, h3, p, li, label, td, th { overflow-wrap: break-word; }
+img, video { max-width: 100%; }
+
+.cine-hero { position: relative; isolation: isolate; min-height: 78vh; overflow: hidden; background: #0b0610; }
+.cine-hero img, .cine-hero video, .campaign-panel img, .campaign-panel video, .aisle img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.motion-video { z-index: 1; }
+.hero-veil { position: absolute; inset: 0; z-index: 2; background: linear-gradient(180deg, rgba(11,6,16,0.12) 0%, rgba(11,6,16,0.78) 100%); pointer-events: none; }
+.cine-copy { position: relative; z-index: 3; max-width: 1180px; margin: 0 auto; padding: 6rem 1.5rem 4rem; }
+.cine-copy h1 { margin: 0 0 1rem; color: var(--text-strong); font-family: var(--display); font-size: clamp(2.4rem, 6vw, 4.4rem); line-height: 1.05; font-weight: 600; font-style: italic; }
+.ken { animation: ken 22s ease-in-out alternate infinite; will-change: transform; }
+@keyframes ken { from { transform: scale(1.04); } to { transform: scale(1.12) translate3d(-2%, -1%, 0); } }
+
+.marquee { overflow: hidden; border-block: 1px solid rgba(212, 176, 106, 0.18); background: #0a0610; }
+.marquee-track { display: flex; width: max-content; animation: marquee 48s linear infinite; }
+.marquee-track img { height: 7.5rem; width: auto; object-fit: cover; }
+
+.campaign-home { display: grid; grid-template-columns: 1fr; }
+.campaign-panel { position: relative; isolation: isolate; min-height: 16rem; overflow: hidden; border: 0; padding: 0; color: var(--text-strong); cursor: pointer; text-align: left; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; }
+.campaign-panel .eyebrow, .campaign-panel strong { position: relative; z-index: 3; padding: 0 1.25rem; }
+.campaign-panel strong { display: block; font-family: var(--display); font-style: italic; font-size: clamp(1.6rem, 3vw, 2.4rem); padding-bottom: 1.4rem; }
+
+.aisle-grid { display: grid; gap: 0.75rem; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(11rem, auto); }
+.aisle { position: relative; isolation: isolate; overflow: hidden; min-height: 11rem; border: 0; padding: 0; cursor: pointer; color: var(--text-strong); text-align: left; }
+.aisle-grid > :first-child { grid-column: 1 / -1; min-height: 16rem; }
+.aisle span { position: relative; z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; padding: 1rem; }
+.aisle em { font-style: normal; font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.aisle b { font-family: var(--display); font-size: 1.2rem; font-weight: 600; }
+
+.shop-grid { align-items: stretch; }
+.product-tile { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; }
+.product-tile > * { min-width: 0; max-width: 100%; }
+.card-visual { aspect-ratio: 3 / 4; height: auto; min-height: 11rem; }
+.card-body h3, .card-cat, .card-price { overflow-wrap: anywhere; }
+.card-actions { display: grid; gap: 0.55rem; padding: 0 1rem 1rem; }
+.size-label { display: block; color: var(--gold); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; min-width: 0; }
+.size-select { display: block; width: 100%; max-width: 100%; height: 2.6rem; margin-top: 0.4rem; border: 1px solid var(--line); border-radius: 999px; background: #160b16; color: var(--gold-soft); padding: 0 0.85rem; }
+.card-actions .cta { width: 100%; }
+
+.guide-steps { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: 0.85rem; }
+.guide-steps li { border: 1px solid rgba(212, 176, 106, 0.18); background: rgba(16, 8, 16, 0.7); padding: 1rem; }
+.table-wrap { overflow-x: auto; margin: 0 0 2rem; border: 1px solid rgba(212, 176, 106, 0.18); }
+.chart { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+.chart th { padding: 0.75rem 1rem; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); font-weight: 600; white-space: nowrap; }
+.chart td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chart td:first-child { color: var(--text-strong); font-weight: 600; }
+
+.atelier-foot .foot-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+
+@media (min-width: 768px) {
+  .campaign-home { grid-template-columns: 1.35fr 1fr; grid-template-rows: 1fr 1fr; min-height: 32rem; }
+  .campaign-home > :first-child { grid-row: 1 / 3; min-height: 32rem; }
+  .campaign-panel { min-height: 0; }
+  .aisle-grid { grid-template-columns: repeat(4, 1fr); grid-template-rows: minmax(14rem, auto) minmax(14rem, auto); }
+  .aisle-grid > :nth-child(1) { grid-column: 1 / 3; grid-row: 1 / 3; min-height: 100%; }
+  .aisle-grid > :nth-child(6) { grid-column: 3 / 5; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-video { display: none; }
+  .ken { animation: none; transform: none; }
+  .marquee-track { animation: none; }
+}
 @media (max-width: 860px) {
   .nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; background: #0a0610; padding: 0.5rem; }
   .nav.open { display: flex; }

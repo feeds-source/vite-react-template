@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./App.css";
+import { AISLES, CAMPAIGNS, HERO, MARQUEE } from "./data/banners";
+import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Category, type Product } from "./data/catalog";
+import { FOOTER_AISLES } from "./data/footer";
+import { ALPHA_ROWS, BRA_DETAIL, GUIDE_STEPS, NIGHTY_ROWS } from "./data/size-guide";
 
-type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact";
-type Product = { id: string; name: string; category: string; price: number; description: string; tag?: string; image: string };
+type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact" | "sizes";
 type User = { id: number; email: string; role?: string };
-type CartLine = { product: Product; qty: number };
+type CartLine = { product: Product; qty: number; size: string };
 type OrderItem = { product_id: string; name: string; qty: number; unit_cents: number };
 type OrderEmail = { id: number; kind: string; to_email: string; subject: string; body: string; status: string };
 type StoreOrder = {
@@ -17,24 +20,7 @@ type StoreOrder = {
 const TOKEN_KEY = "femme_token";
 const CART_KEY = "femme_cart";
 const NEXT_KEY = "femme_next";
-const CATEGORIES = ["All", "Bras", "Panties", "Lingerie", "Shapewear", "Sleepwear", "Loungewear", "Thermal"] as const;
 const COUNTRIES = ["United Arab Emirates", "United Kingdom", "Pakistan", "United States", "Other"] as const;
-const photo = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=640&q=60`;
-const PRODUCTS: Product[] = [
-  { id: "everyday-soft-bra", name: "Everyday Soft Cup Bra", category: "Bras", price: 42, description: "Wireless everyday bra.", tag: "Best seller", image: photo("photo-1515886657613-9f3515b0c78f") },
-  { id: "ultimate-tshirt-bra", name: "Ultimate T-Shirt Bra", category: "Bras", price: 48, description: "Smooth molded cups.", tag: "New", image: photo("photo-1524504388940-b1c1722653e1") },
-  { id: "first-fit-teen-bra", name: "First Fit Bralette", category: "Bras", price: 28, description: "Gentle first-fit bralette.", image: photo("photo-1487412720507-e7ab37603c6f") },
-  { id: "daily-hipster", name: "Daily Hipster Brief", category: "Panties", price: 16, description: "Breathable mid-rise brief.", image: photo("photo-1469334031218-e382a71b716b") },
-  { id: "seamless-thong", name: "Seamless Soft Thong", category: "Panties", price: 14, description: "Nearly invisible.", image: photo("photo-1490481651871-ab68de25d43d") },
-  { id: "lace-balconette-set", name: "Lace Balconette Set", category: "Lingerie", price: 78, description: "Midnight lace set.", tag: "Set", image: photo("photo-1515372039744-b8f02a3ae446") },
-  { id: "mesh-bodysuit", name: "Mesh Contour Bodysuit", category: "Lingerie", price: 88, description: "Sculpting mesh.", image: photo("photo-1529626455594-4ff0802cfb7e") },
-  { id: "high-waist-shaper", name: "High-Waist Soft Shaper", category: "Shapewear", price: 54, description: "Light control.", image: photo("photo-1503342217505-b0a15ec3261c") },
-  { id: "slip-short", name: "Everyday Slip Short", category: "Shapewear", price: 36, description: "Anti-chafe shorts.", image: photo("photo-1483985988355-763728e1935b") },
-  { id: "satin-night-set", name: "Satin Night Cami Set", category: "Sleepwear", price: 64, description: "Cool-touch satin.", image: photo("photo-1515886657613-9f3515b0c78f") },
-  { id: "cloud-robe", name: "Cloud Knit Robe", category: "Loungewear", price: 72, description: "Mid-weight robe.", image: photo("photo-1469334031218-e382a71b716b") },
-  { id: "lounge-wide-pant", name: "Wide-Leg Lounge Pant", category: "Loungewear", price: 58, description: "Relaxed modal pant.", image: photo("photo-1524504388940-b1c1722653e1") },
-  { id: "thermal-set", name: "Soft Thermal Set", category: "Thermal", price: 68, description: "Warm layer set.", image: photo("photo-1487412720507-e7ab37603c6f") },
-];
 
 function money(n: number) { return `$${n.toFixed(2)}`; }
 function moneyCents(c: number) { return money((c || 0) / 100); }
@@ -84,13 +70,14 @@ function printSheet(title: string, bodyHtml: string) {
 function App() {
   const [view, setView] = useState<View>("home");
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All");
+  const [pickSize, setPickSize] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartLine[]>(() => {
     try {
-      const raw = JSON.parse(localStorage.getItem(CART_KEY) || "[]") as Array<{ id: string; qty: number }>;
+      const raw = JSON.parse(localStorage.getItem(CART_KEY) || "[]") as Array<{ id: string; qty: number; size?: string }>;
       return raw.map((l) => {
         const product = PRODUCTS.find((p) => p.id === l.id);
-        return product && l.qty > 0 ? { product, qty: l.qty } : null;
+        return product && l.qty > 0 ? { product, qty: l.qty, size: l.size || defaultSize(product) } : null;
       }).filter((l): l is CartLine => Boolean(l));
     } catch { return []; }
   });
@@ -139,22 +126,23 @@ function App() {
     }
   }, []);
   useEffect(() => { void refreshMe(token); }, [token, refreshMe]);
-  useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart.map((l) => ({ id: l.product.id, qty: l.qty })))); }, [cart]);
+  useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart.map((l) => ({ id: l.product.id, qty: l.qty, size: l.size })))); }, [cart]);
 
   function persistToken(t: string | null) {
     if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY);
     setToken(t);
   }
   function goShop(cat: (typeof CATEGORIES)[number] = "All") { setCategory(cat); setSelected(null); setView("shop"); setMenuOpen(false); }
-  function addToCart(p: Product) {
+  function sizeOf(p: Product) { return pickSize[p.id] || defaultSize(p); }
+  function addToCart(p: Product, size = sizeOf(p)) {
     setCart((prev) => {
-      const hit = prev.find((l) => l.product.id === p.id);
-      if (hit) return prev.map((l) => (l.product.id === p.id ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { product: p, qty: 1 }];
+      const hit = prev.find((l) => l.product.id === p.id && l.size === size);
+      if (hit) return prev.map((l) => (l.product.id === p.id && l.size === size ? { ...l, qty: l.qty + 1 } : l));
+      return [...prev, { product: p, qty: 1, size }];
     });
   }
-  function setQty(id: string, qty: number) {
-    setCart((prev) => qty <= 0 ? prev.filter((l) => l.product.id !== id) : prev.map((l) => (l.product.id === id ? { ...l, qty } : l)));
+  function setQty(id: string, size: string, qty: number) {
+    setCart((prev) => qty <= 0 ? prev.filter((l) => !(l.product.id === id && l.size === size)) : prev.map((l) => (l.product.id === id && l.size === size ? { ...l, qty } : l)));
   }
   async function handleAuth(mode: "login" | "register") {
     setAuthError(""); setAuthBusy(true);
@@ -178,7 +166,7 @@ function App() {
     if (ok) setAdminOrders(data.orders ?? []);
     else setAdminNotice(data.error ?? "Admin access needed");
   }
-  async function confirmCheckout(e: React.FormEvent) {
+  async function confirmCheckout(e: FormEvent) {
     e.preventDefault();
     if (!user || !token || cart.length === 0) return;
     setAuthBusy(true); setAuthError("");
@@ -267,6 +255,7 @@ function App() {
       <nav className={`nav ${menuOpen ? "open" : ""}`}>
         <button type="button" onClick={() => setView("home")}>Home</button>
         <button type="button" onClick={() => goShop()}>Shop</button>
+        <button type="button" onClick={() => { setView("sizes"); setMenuOpen(false); }}>Sizes</button>
         <button type="button" onClick={() => setView("about")}>About</button>
         <button type="button" onClick={() => setView("contact")}>Contact</button>
       </nav>
@@ -284,16 +273,32 @@ function App() {
     </header>
   );
   const footer = (
-    <footer className="foot">
+    <footer className="foot atelier-foot">
       <div className="foot-grid">
-        <div><p className="foot-brand">FEMME</p><p className="muted">Comfort, confidence and care.</p></div>
-        <div><h3>Shop</h3>{CATEGORIES.filter((c) => c !== "All").map((c) => <button key={c} type="button" onClick={() => goShop(c)}>{c}</button>)}</div>
-        <div><h3>House</h3><button type="button" onClick={() => setView("account")}>My orders</button>{isAdmin && <button type="button" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin orders</button>}</div>
-        <div><h3>Store</h3><p className="muted">info@silkmoments.com</p></div>
+        <div>
+          <p className="foot-brand">FEMME</p>
+          <p className="muted">Silk Atelier</p>
+          <p className="lede">Exotic silk, cut for the body.</p>
+        </div>
+        {FOOTER_AISLES.map((g) => (
+          <div key={g.title}>
+            <h3>{g.title}</h3>
+            {g.cats.map((c) => <button key={c} type="button" onClick={() => goShop(c)}>{c}</button>)}
+          </div>
+        ))}
+        <div>
+          <h3>House</h3>
+          <button type="button" onClick={() => setView("about")}>The atelier</button>
+          <button type="button" onClick={() => setView("sizes")}>Size guide</button>
+          <button type="button" onClick={() => setView("contact")}>Contact</button>
+          <button type="button" onClick={() => setView("account")}>Orders</button>
+          {isAdmin && <button type="button" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin</button>}
+          <p className="muted">info@silkmoments.com</p>
+        </div>
       </div>
     </footer>
   );
-  function shell(body: React.ReactNode) { return <div className="store">{header}{body}{footer}</div>; }
+  function shell(body: ReactNode) { return <div className="store">{header}{body}{footer}</div>; }
 
   if (view === "login" || view === "register") {
     const isLogin = view === "login";
@@ -340,6 +345,11 @@ function App() {
     return shell(<main className="page"><button type="button" className="back" onClick={() => goShop()}>Back</button>
       <div className="detail-grid"><div className="detail-hero" style={{ backgroundImage: `url(${selected.image})` }} />
         <div className="detail-copy"><h1>{selected.name}</h1><p className="price">{money(selected.price)}</p><p>{selected.description}</p>
+          <label className="size-label">Size
+            <select className="size-select" value={sizeOf(selected)} onChange={(e) => setPickSize((s) => ({ ...s, [selected.id]: e.target.value }))}>
+              {sizesFor(selected).map((sz) => <option key={sz} value={sz}>{sz}</option>)}
+            </select>
+          </label>
           <button type="button" className="cta" onClick={() => addToCart(selected)}>Add to bag</button></div></div></main>);
   }
 
@@ -347,9 +357,9 @@ function App() {
     return shell(<main className="page"><h1 className="page-title">Your bag</h1>
       {cart.length === 0 ? <button type="button" className="text-link" onClick={() => goShop()}>Shop</button> : (
         <div className="cart-layout">
-          <ul className="cart-list">{cart.map((l) => <li key={l.product.id}><div className="cart-swatch" style={{ backgroundImage: `url(${l.product.image})` }} /><div><strong>{l.product.name}</strong></div>
-            <div className="qty"><button type="button" onClick={() => setQty(l.product.id, l.qty - 1)}>-</button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.product.id, l.qty + 1)}>+</button></div>
-            <button type="button" className="text-link" onClick={() => setQty(l.product.id, 0)}>Remove</button></li>)}</ul>
+          <ul className="cart-list">{cart.map((l) => <li key={`${l.product.id}-${l.size}`}><div className="cart-swatch" style={{ backgroundImage: `url(${l.product.image})` }} /><div><strong>{l.product.name}</strong><p className="muted">{l.size}</p></div>
+            <div className="qty"><button type="button" onClick={() => setQty(l.product.id, l.size, l.qty - 1)}>-</button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.product.id, l.size, l.qty + 1)}>+</button></div>
+            <button type="button" className="text-link" onClick={() => setQty(l.product.id, l.size, 0)}>Remove</button></li>)}</ul>
           <aside className="cart-sum">
             {totalsBlock()}
             <button type="button" className="cta" onClick={() => { localStorage.setItem(NEXT_KEY, "checkout"); setPlaced(null); setView("checkout"); }}>Review receipt</button>
@@ -411,11 +421,11 @@ function App() {
             <p className="eyebrow">Receipt</p>
             {cart.length === 0 ? <p className="muted">Bag is empty.</p> : (
               <ul className="cart-list compact">{cart.map((l) => (
-                <li key={l.product.id}>
+                <li key={`${l.product.id}-${l.size}`}>
                   <div className="cart-swatch" style={{ backgroundImage: `url(${l.product.image})` }} />
-                  <div><strong>{l.product.name}</strong></div>
-                  <div className="qty"><button type="button" onClick={() => setQty(l.product.id, l.qty - 1)}>-</button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.product.id, l.qty + 1)}>+</button></div>
-                  <button type="button" className="text-link" onClick={() => setQty(l.product.id, 0)}>Remove</button>
+                  <div><strong>{l.product.name}</strong><p className="muted">{l.size}</p></div>
+                  <div className="qty"><button type="button" onClick={() => setQty(l.product.id, l.size, l.qty - 1)}>-</button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.product.id, l.size, l.qty + 1)}>+</button></div>
+                  <button type="button" className="text-link" onClick={() => setQty(l.product.id, l.size, 0)}>Remove</button>
                 </li>
               ))}</ul>
             )}
@@ -465,19 +475,118 @@ function App() {
 
   if (view === "about") return shell(<main className="page"><h1 className="page-title">Femme</h1><p className="lede">Comfort, confidence and care.</p></main>);
   if (view === "contact") return shell(<main className="page"><h1 className="page-title">Contact</h1><p className="muted">info@silkmoments.com</p></main>);
-  if (view === "shop" || view === "home") {
-    return shell(<main className="page">
-      <h1 className="page-title">{view === "home" ? "The collection" : category === "All" ? "Shop" : category}</h1>
+  const productGrid = (
+    <>
       <div className="nav-cats">{CATEGORIES.map((c) => <button key={c} type="button" className={category === c ? "active" : ""} onClick={() => { setCategory(c); setView("shop"); }}>{c}</button>)}</div>
-      <div className="grid">{filtered.map((p) => (
-        <article key={p.id} className="card">
+      <div className="grid shop-grid">{filtered.map((p) => (
+        <article key={p.id} className="card product-tile">
           <button type="button" className="card-hit" onClick={() => { setSelected(p); setView("product"); }}>
-            <div className="card-visual"><img src={p.image} alt="" />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
-            <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
+            <div className="card-visual">
+              <img className="ken" src={p.image} alt="" />
+              {p.tag && <span className="tag on-dark">{p.tag}</span>}
+            </div>
           </button>
-          <button type="button" className="cta" onClick={() => addToCart(p)}>Add</button>
+          <div className="card-body">
+            <p className="card-cat">{p.category}</p>
+            <h3>{p.name}</h3>
+            <p className="card-price">{money(p.price)}</p>
+          </div>
+          <div className="card-actions">
+            <label className="size-label">Size
+              <select className="size-select" value={sizeOf(p)} onChange={(e) => setPickSize((s) => ({ ...s, [p.id]: e.target.value }))}>
+                {sizesFor(p).map((sz) => <option key={sz} value={sz}>{sz}</option>)}
+              </select>
+            </label>
+            <button type="button" className="cta" onClick={() => addToCart(p)}>Add</button>
+          </div>
         </article>
       ))}</div>
+    </>
+  );
+
+  if (view === "sizes") {
+    return shell(<main className="page">
+      <p className="eyebrow">Fit lab</p>
+      <h1 className="page-title">Size guide</h1>
+      <p className="lede">Tape snug, stand easy. Charts below are the atelier starting point — silk has give.</p>
+      <ol className="guide-steps">{GUIDE_STEPS.map((s) => <li key={s.title}><strong>{s.title}</strong><p className="muted">{s.body}</p></li>)}</ol>
+      <h2 className="section-title">Bras</h2>
+      <div className="table-wrap"><table className="chart"><thead><tr><th>Size</th><th>Band</th><th>Cup</th><th>Underbust cm</th><th>Bust cm</th><th>Sisters</th><th>EU</th><th>FR</th></tr></thead>
+        <tbody>{BRA_DETAIL.map((r) => <tr key={r.size}><td>{r.size}</td><td>{r.band}</td><td>{r.cup}</td><td>{r.underCm}</td><td>{r.bustCm}</td><td>{r.sisters}</td><td>{r.eu}</td><td>{r.fr}</td></tr>)}</tbody></table></div>
+      <h2 className="section-title">Body</h2>
+      <div className="table-wrap"><table className="chart"><thead><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Hip</th><th>UK</th><th>US</th><th>EU</th></tr></thead>
+        <tbody>{ALPHA_ROWS.map((r) => <tr key={r.size}><td>{r.size}</td><td>{r.bust}</td><td>{r.waist}</td><td>{r.hip}</td><td>{r.uk}</td><td>{r.us}</td><td>{r.eu}</td></tr>)}</tbody></table></div>
+      <h2 className="section-title">Nightwear</h2>
+      <div className="table-wrap"><table className="chart"><thead><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Hip</th><th>Length</th><th>Note</th></tr></thead>
+        <tbody>{NIGHTY_ROWS.map((r) => <tr key={r.size}><td>{r.size}</td><td>{r.bust}</td><td>{r.waist}</td><td>{r.hip}</td><td>{r.length}</td><td>{r.note}</td></tr>)}</tbody></table></div>
+    </main>);
+  }
+
+  if (view === "home") {
+    const featured = PRODUCTS.filter((p) => p.tag);
+    return <div className="store">{header}
+      <section className="cine-hero">
+        <img className="ken" src={HERO.poster} alt="" />
+        <video className="motion-video" autoPlay muted loop playsInline poster={HERO.poster}><source src={HERO.video} type="video/mp4" /></video>
+        <div className="hero-veil" />
+        <div className="cine-copy">
+          <p className="eyebrow">{HERO.kicker}</p>
+          <h1>{HERO.title}</h1>
+          <p className="lede">{HERO.body}</p>
+          <button type="button" className="cta" onClick={() => goShop()}>Shop the house</button>
+        </div>
+      </section>
+      <div className="marquee" aria-hidden="true"><div className="marquee-track">{[...MARQUEE, ...MARQUEE].map((m, i) => <img key={i} src={m.src} alt="" />)}</div></div>
+      <section className="campaign-home">
+        {CAMPAIGNS.map((c) => (
+          <button key={c.id} type="button" className="campaign-panel" onClick={() => goShop(c.cat as Category)}>
+            <img className="ken" src={c.poster} alt="" />
+            {c.video && <video className="motion-video" autoPlay muted loop playsInline poster={c.poster}><source src={c.video} type="video/mp4" /></video>}
+            <div className="hero-veil" />
+            <span className="eyebrow">{c.kicker}</span>
+            <strong>{c.title}</strong>
+          </button>
+        ))}
+      </section>
+      <main className="page">
+        <p className="eyebrow">New aisles</p>
+        <h2 className="page-title">More of the house</h2>
+        <div className="aisle-grid">
+          {AISLES.map((a) => (
+            <button key={a.cat} type="button" className="aisle" onClick={() => goShop(a.cat)}>
+              <img src={a.image} alt="" />
+              <div className="hero-veil" />
+              <span><em>{a.cat}</em><b>{a.title}</b></span>
+            </button>
+          ))}
+        </div>
+        <p className="eyebrow" style={{marginTop:"3rem"}}>Exotic collection</p>
+        <h2 className="page-title">Lingerie in motion</h2>
+        <div className="grid shop-grid">{featured.map((p) => (
+          <article key={p.id} className="card product-tile">
+            <button type="button" className="card-hit" onClick={() => { setSelected(p); setView("product"); }}>
+              <div className="card-visual"><img className="ken" src={p.image} alt="" />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
+            </button>
+            <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
+            <div className="card-actions">
+              <label className="size-label">Size
+                <select className="size-select" value={sizeOf(p)} onChange={(e) => setPickSize((s) => ({ ...s, [p.id]: e.target.value }))}>
+                  {sizesFor(p).map((sz) => <option key={sz} value={sz}>{sz}</option>)}
+                </select>
+              </label>
+              <button type="button" className="cta" onClick={() => addToCart(p)}>Add</button>
+            </div>
+          </article>
+        ))}</div>
+      </main>
+      {footer}
+    </div>;
+  }
+
+  if (view === "shop") {
+    return shell(<main className="page">
+      <h1 className="page-title">{category === "All" ? "Shop" : category}</h1>
+      {productGrid}
     </main>);
   }
   return shell(<main className="page"><h1 className="page-title">Femme</h1></main>);
