@@ -7,4 +7,5 @@ interface Env {
 	GOOGLE_CLIENT_ID: string;
 	GOOGLE_CLIENT_SECRET: string;
 	OAUTH_STATE_SECRET: string;
+	ADMIN_EMAILS: string;
 }
