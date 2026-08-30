@@ -1,23 +1,29 @@
 import type { ReactNode } from "react";
-import { AISLES } from "../data/banners";
+import { AISLES, CAMPAIGNS } from "../data/banners";
 import { CATEGORIES } from "../data/catalog";
 import { CAT_HERO } from "../data/house";
+import type { Room } from "../data/footer";
 
 export function ShopView({
   category,
+  room,
   count,
   productGrid,
   onCat,
   onSizes,
 }: {
   category: (typeof CATEGORIES)[number];
+  room?: Room | "";
   count: number;
   productGrid: ReactNode;
   onCat: (c: (typeof CATEGORIES)[number]) => void;
   onSizes: () => void;
 }) {
-  const hero = CAT_HERO[category];
-  const title = category === "All" ? "Shop the house" : category;
+  const campaign = room ? CAMPAIGNS.find((c) => c.kicker === room) : null;
+  const hero = category !== "All" ? CAT_HERO[category] : campaign
+    ? { image: campaign.poster, video: campaign.video, kicker: campaign.kicker, body: campaign.title }
+    : CAT_HERO.All;
+  const title = category !== "All" ? category : room || "Shop the house";
   return (
     <>
       <section className="page-hero">
@@ -35,7 +41,7 @@ export function ShopView({
         </div>
       </section>
 
-      {category === "All" ? (
+      {category === "All" && !room ? (
         <section className="page">
           <p className="eyebrow">Aisles</p>
           <h2 className="page-title">Walk the house</h2>
@@ -68,7 +74,7 @@ export function ShopView({
         <div className="catalog-head">
           <p className="muted">
             {count} {count === 1 ? "piece" : "pieces"}
-            {category !== "All" ? ` in ${category}` : " in the atelier"}
+            {category !== "All" ? ` in ${category}` : room ? ` in ${room}` : " in the atelier"}
           </p>
           <button type="button" className="text-link" onClick={onSizes}>
             Size charts

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./App.css";
-import { AISLES, CAMPAIGNS, HERO, MARQUEE } from "./data/banners";
-import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Category, type Product } from "./data/catalog";
-import { FOOTER_AISLES } from "./data/footer";
+import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT } from "./data/banners";
+import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Product } from "./data/catalog";
+import { FOOTER_AISLES, ROOMS, type Room } from "./data/footer";
 import { ShopView } from "./pages/ShopView";
 import { SizesView } from "./pages/SizesView";
 import { AtelierView } from "./pages/AtelierView";
@@ -74,13 +74,14 @@ function printSheet(title: string, bodyHtml: string) {
 }
 
 
-function pathFor(view: View, opts?: { cat?: string; product?: Product | null; q?: string }): string {
+function pathFor(view: View, opts?: { cat?: string; product?: Product | null; q?: string; room?: Room | "" }): string {
   if (view === "home") return "/";
   if (view === "search") {
     const q = opts?.q?.trim();
     return q ? `/search?q=${encodeURIComponent(q)}` : "/search";
   }
   if (view === "shop") {
+    if (opts?.room) return `/shop?room=${encodeURIComponent(opts.room)}`;
     const cat = opts?.cat;
     return cat && cat !== "All" ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop";
   }
@@ -97,22 +98,24 @@ function pathFor(view: View, opts?: { cat?: string; product?: Product | null; q?
   return "/";
 }
 
-function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; product: Product | null; q: string } {
+function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; product: Product | null; q: string; room: Room | "" } {
   const url = new URL(window.location.href);
   const path = url.pathname.replace(/\/+$/, "") || "/";
   const catParam = url.searchParams.get("cat");
   const q = url.searchParams.get("q") || "";
+  const roomParam = url.searchParams.get("room");
+  const room: Room | "" = roomParam && roomParam in ROOMS ? (roomParam as Room) : "";
   const cat = CATEGORIES.includes(catParam as (typeof CATEGORIES)[number])
     ? (catParam as (typeof CATEGORIES)[number])
     : "All";
-  if (path === "/search") return { view: "search", cat, product: null, q };
-  if (path === "/shop") return { view: "shop", cat, product: null, q };
+  if (path === "/search") return { view: "search", cat, product: null, q, room: "" };
+  if (path === "/shop") return { view: "shop", cat, product: null, q, room };
   if (path.startsWith("/shop/")) {
     const id = decodeURIComponent(path.slice("/shop/".length));
     const product = PRODUCTS.find((p) => p.id === id) ?? null;
     return product
-      ? { view: "product", cat: product.category, product, q }
-      : { view: "shop", cat, product: null, q };
+      ? { view: "product", cat: product.category, product, q, room: "" }
+      : { view: "shop", cat, product: null, q, room: "" };
   }
   const map: Record<string, View> = {
     "/size-guide": "sizes",
@@ -127,7 +130,7 @@ function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; produc
     "/account": "account",
     "/admin": "admin",
   };
-  return { view: map[path] ?? "home", cat, product: null, q };
+  return { view: map[path] ?? "home", cat, product: null, q, room: "" };
 }
 
 function App() {
@@ -163,12 +166,17 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(boot.q);
+  const [room, setRoom] = useState<Room | "">(boot.room);
 
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartTotal = cart.reduce((n, l) => n + l.product.price * l.qty, 0);
   const q = quoteCart(cartTotal, cartCount, shipAddr, shipCountry);
   const isAdmin = user?.role === "admin";
-  const filtered = useMemo(() => category === "All" ? PRODUCTS : PRODUCTS.filter((p) => p.category === category), [category]);
+  const filtered = useMemo(() => {
+    if (category !== "All") return PRODUCTS.filter((p) => p.category === category);
+    if (room) return PRODUCTS.filter((p) => (ROOMS[room] as readonly string[]).includes(p.category));
+    return PRODUCTS;
+  }, [category, room]);
 
   const refreshMe = useCallback(async (t: string | null) => {
     if (!t) { setUser(null); return; }
@@ -201,6 +209,7 @@ function App() {
       setCategory(loc.cat);
       setSelected(loc.product);
       setSearchQuery(loc.q);
+      setRoom(loc.room);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -211,20 +220,28 @@ function App() {
     setToken(t);
   }
 
-  function go(next: View, extra?: { cat?: (typeof CATEGORIES)[number]; product?: Product | null; q?: string }) {
+  function go(next: View, extra?: { cat?: (typeof CATEGORIES)[number]; product?: Product | null; q?: string; room?: Room | "" }) {
     if (extra?.cat) setCategory(extra.cat);
     if (extra && "product" in extra) setSelected(extra.product ?? null);
     if (extra && "q" in extra && extra.q != null) setSearchQuery(extra.q);
+    if (extra && "room" in extra) setRoom(extra.room ?? "");
+    else if (next !== "shop") setRoom("");
     setViewRaw(next);
     setMenuOpen(false);
     setSearchOpen(false);
-    const url = pathFor(next, { cat: extra?.cat ?? category, product: extra && "product" in extra ? extra.product : next === "product" ? selected : null, q: extra?.q ?? (next === "search" ? searchQuery : undefined) });
+    const url = pathFor(next, {
+      cat: extra?.cat ?? category,
+      product: extra && "product" in extra ? extra.product : next === "product" ? selected : null,
+      q: extra?.q ?? (next === "search" ? searchQuery : undefined),
+      room: extra && "room" in extra ? extra.room : next === "shop" ? room : "",
+    });
     const now = `${window.location.pathname}${window.location.search}`;
     if (now !== url) window.history.pushState({ view: next }, "", url);
   }
   const setView = (next: View) => go(next);
 
-  function goShop(cat: (typeof CATEGORIES)[number] = "All") { go("shop", { cat, product: null }); }
+  function goShop(cat: (typeof CATEGORIES)[number] = "All") { go("shop", { cat, product: null, room: "" }); }
+  function goRoom(next: Room) { setCategory("All"); go("shop", { cat: "All", product: null, room: next }); }
   function sizeOf(p: Product) { return pickSize[p.id] || defaultSize(p); }
   function addToCart(p: Product, size = sizeOf(p)) {
     setCart((prev) => {
@@ -349,15 +366,17 @@ function App() {
 
   const header = (
     <>
-    <div className="announcement-bar" role="region" aria-label="Announcement">Complimentary atelier packaging on all orders · Worldwide delivery</div>
+    <div className="announcement-bar" role="region" aria-label="Announcement">{ANNOUNCEMENT}</div>
     <header className="topbar">
       <button type="button" className="brand" onClick={() => setView("home")}>FEMME<small>Silk Atelier</small></button>
       <nav className={`nav ${menuOpen ? "open" : ""}`}>
-        <button type="button" onClick={() => setView("home")}>Home</button>
-        <button type="button" onClick={() => goShop()}>Shop</button>
-        <button type="button" onClick={() => { setView("sizes"); setMenuOpen(false); }}>Sizes</button>
-        <button type="button" onClick={() => go("about")}>Atelier</button>
-        <button type="button" onClick={() => setView("contact")}>Contact</button>
+        <button type="button" className={view === "shop" && !room && category === "All" ? "active" : ""} onClick={() => goShop()}>Shop</button>
+        <button type="button" className={room === "Sleep" ? "active" : ""} onClick={() => goRoom("Sleep")}>Sleep</button>
+        <button type="button" className={room === "Lingerie" ? "active" : ""} onClick={() => goRoom("Lingerie")}>Lingerie</button>
+        <button type="button" className={room === "Lounge" ? "active" : ""} onClick={() => goRoom("Lounge")}>Lounge</button>
+        <button type="button" className={view === "about" ? "active" : ""} onClick={() => go("about")}>The Atelier</button>
+        <button type="button" className={view === "sizes" ? "active" : ""} onClick={() => { setView("sizes"); setMenuOpen(false); }}>Size Guide</button>
+        <button type="button" className={view === "contact" ? "active" : ""} onClick={() => setView("contact")}>Contact</button>
       </nav>
       <div className="topbar-right">
         <button type="button" className="icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search the atelier">Search</button>
@@ -389,7 +408,7 @@ function App() {
         <div>
           <p className="foot-brand">FEMME</p>
           <p className="muted">Silk Atelier</p>
-          <p className="lede">Exotic silk, cut for the body.</p>
+          <p className="lede">Exotic silk, cut for the body. Complimentary discreet packaging and cash on delivery worldwide.</p>
         </div>
         {FOOTER_AISLES.map((g) => (
           <div key={g.title}>
@@ -461,7 +480,22 @@ function App() {
               {sizesFor(selected).map((sz) => <option key={sz} value={sz}>{sz}</option>)}
             </select>
           </label>
-          <button type="button" className="cta" onClick={() => addToCart(selected)}>Add to bag</button></div></div></main>);
+          <p className="muted size-guide-note">Complimentary size exchange · Cash on delivery worldwide · <button type="button" className="text-link" onClick={() => go("sizes")}>Size guide</button></p>
+          <button type="button" className="cta" onClick={() => addToCart(selected)}>Add to bag</button>
+          <div className="product-trust">
+            <div className="trust-item"><span className="trust-icon" aria-hidden="true">📦</span><div><p className="trust-title">Discreet Atelier Presentation</p><p className="trust-desc">Signature noir & gold presentation box on all orders</p></div></div>
+            <div className="trust-item"><span className="trust-icon" aria-hidden="true">💵</span><div><p className="trust-title">Cash on Delivery Worldwide</p><p className="trust-desc">Doorstep inspection with printable receipt</p></div></div>
+            <div className="trust-item"><span className="trust-icon" aria-hidden="true">📐</span><div><p className="trust-title">14-Day Complimentary Exchange</p><p className="trust-desc">Free size exchange support across 30B–42C & XS–XXL</p></div></div>
+          </div>
+          <details className="pdp-tab">
+            <summary>Atelier Silk Care & Materials</summary>
+            <p>100% 19mm Mulberry Silk with French Leavers lace accents. Hand wash cold with delicate silk detergent or dry clean only. Dry flat in shade.</p>
+          </details>
+          <details className="pdp-tab">
+            <summary>Shipping, Returns & Cash on Delivery</summary>
+            <p>Complimentary discreet luxury packaging with all atelier orders. Cash on delivery worldwide with doorstep inspection. Free size exchanges within 14 days of delivery.</p>
+          </details>
+        </div></div></main>);
   }
 
   if (view === "cart") {
@@ -629,13 +663,29 @@ function App() {
           <p className="eyebrow">{HERO.kicker}</p>
           <h1>{HERO.title}</h1>
           <p className="lede">{HERO.body}</p>
-          <button type="button" className="cta" onClick={() => goShop()}>Shop the house</button>
+          <div className="hero-ctas">
+            <button type="button" className="cta" onClick={() => goShop()}>Shop the house</button>
+            <button type="button" className="cta ghost" onClick={() => go("sizes")}>Fit studio & sizing</button>
+          </div>
+        </div>
+      </section>
+      <section className="page trust-wrap">
+        <div className="trust-strip">
+          {TRUST.map((t) => (
+            <div key={t.title} className="trust-item">
+              <span className="trust-icon" aria-hidden="true">{t.icon}</span>
+              <div>
+                <p className="trust-title">{t.title}</p>
+                <p className="trust-desc">{t.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
       <div className="marquee" aria-hidden="true"><div className="marquee-track">{[...MARQUEE, ...MARQUEE].map((m, i) => <img key={i} src={m.src} alt="" />)}</div></div>
       <section className="campaign-home">
         {CAMPAIGNS.map((c) => (
-          <button key={c.id} type="button" className="campaign-panel" onClick={() => goShop(c.cat as Category)}>
+          <button key={c.id} type="button" className="campaign-panel" onClick={() => goRoom(c.kicker as Room)}>
             <img className="ken" src={c.poster} alt="" />
             {c.video && <video className="motion-video" autoPlay muted loop playsInline poster={c.poster}><source src={c.video} type="video/mp4" /></video>}
             <div className="hero-veil" />
@@ -643,6 +693,23 @@ function App() {
             <strong>{c.title}</strong>
           </button>
         ))}
+      </section>
+      <section className="page">
+        <div className="atelier-story-card">
+          <div className="atelier-story-media">
+            <img src={HERO.poster} alt="The Femme Atelier" />
+            <div className="hero-veil" style={{ opacity: 0.35 }} />
+          </div>
+          <div className="atelier-story-content">
+            <p className="eyebrow">{STORY.kicker}</p>
+            <h2 className="page-title">{STORY.heading}</h2>
+            <p className="lede">{STORY.body}</p>
+            <div className="hero-ctas">
+              <button type="button" className="cta" onClick={() => go("about")}>Discover The Atelier</button>
+              <button type="button" className="cta ghost" onClick={() => go("sizes")}>Explore Fit Matrix</button>
+            </div>
+          </div>
+        </div>
       </section>
       <main className="page">
         <p className="eyebrow">New aisles</p>
@@ -683,7 +750,7 @@ function App() {
     return <div className="store">{header}<SearchView query={searchQuery} onQuery={(q) => go("search", { q })} onAisle={goShop} onPage={goPage}>{productGrid}</SearchView>{footer}</div>;
   }
   if (view === "shop") {
-    return <div className="store">{header}<ShopView category={category} count={filtered.length} productGrid={productGrid} onCat={goShop} onSizes={() => go("sizes")} />{footer}</div>;
+    return <div className="store">{header}<ShopView category={category} room={room} count={filtered.length} productGrid={productGrid} onCat={goShop} onSizes={() => go("sizes")} />{footer}</div>;
   }
   return shell(<main className="page"><h1 className="page-title">Femme</h1></main>);
 }

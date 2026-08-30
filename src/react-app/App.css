@@ -402,3 +402,47 @@ img, video { max-width: 100%; }
 }
 
 
+
+.hero-ctas { display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
+.trust-wrap { padding-top: 2.2rem; padding-bottom: 0.5rem; }
+.trust-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  padding: 1.75rem 2rem;
+  background: rgba(16, 8, 16, 0.75);
+  border: 1px solid rgba(212, 176, 106, 0.18);
+}
+.trust-item { display: flex; align-items: flex-start; gap: 1rem; }
+.trust-icon { font-size: 1.5rem; line-height: 1; }
+.trust-title { margin: 0; font-weight: 600; font-size: 0.95rem; color: var(--text-strong); }
+.trust-desc { margin: 0.25rem 0 0; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+.atelier-story-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  background: rgba(16, 8, 16, 0.75);
+  border: 1px solid rgba(212, 176, 106, 0.18);
+  overflow: hidden;
+}
+@media (min-width: 860px) {
+  .atelier-story-card { grid-template-columns: 1fr 1.15fr; align-items: center; }
+}
+.atelier-story-media { position: relative; min-height: 20rem; isolation: isolate; }
+.atelier-story-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.atelier-story-content { padding: 2.4rem 2rem; }
+.atelier-story-content .page-title { font-style: italic; margin-bottom: 0.75rem; }
+.product-trust {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: rgba(16, 8, 16, 0.75);
+  border: 1px solid rgba(212, 176, 106, 0.18);
+  display: grid;
+  gap: 0.85rem;
+}
+.pdp-tab { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
+.pdp-tab summary { cursor: pointer; font-weight: 600; color: var(--text-strong); list-style: none; display: flex; justify-content: space-between; }
+.pdp-tab summary::-webkit-details-marker { display: none; }
+.pdp-tab summary::after { content: "+"; color: var(--gold); }
+.pdp-tab[open] summary::after { content: "–"; }
+.pdp-tab p { margin: 0.75rem 0 0.4rem; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+.size-guide-note { margin: 0.6rem 0 1rem; font-size: 0.8rem; }
