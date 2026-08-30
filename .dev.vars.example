@@ -13,3 +13,4 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 OAUTH_STATE_SECRET=change-me-to-a-long-random-string
 APP_URL=http://localhost:5173
+ADMIN_EMAILS=info@silkmoments.com

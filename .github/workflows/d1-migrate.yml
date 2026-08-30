@@ -1,0 +1,65 @@
+name: Apply D1 migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      d1_database_id:
+        description: "Optional vite-react-db UUID override"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Remote D1 migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Require token
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "Add CLOUDFLARE_API_TOKEN (Workers Edit + D1 Edit)."
+            exit 1
+          fi
+
+      - name: Pin D1 database
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID_SECRET: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID || vars.D1_DATABASE_ID || github.event.inputs.d1_database_id }}
+        run: |
+          ACCOUNT="${ACCOUNT_ID_SECRET:-1e611220afd75688b509ba299e98bde7}"
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
+          export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT"
+          node scripts/ensure-d1.mjs
+
+      - name: List pending migrations
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1e611220afd75688b509ba299e98bde7"
+          packageManager: npm
+          wranglerVersion: "4.126.0"
+          command: d1 migrations list vite-react-db --remote
+
+      - name: Apply migrations
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: "1e611220afd75688b509ba299e98bde7"
+          packageManager: npm
+          wranglerVersion: "4.126.0"
+          command: d1 migrations apply vite-react-db --remote
