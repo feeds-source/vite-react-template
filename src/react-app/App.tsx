@@ -3,7 +3,9 @@ import "./App.css";
 import { AISLES, CAMPAIGNS, HERO, MARQUEE } from "./data/banners";
 import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Category, type Product } from "./data/catalog";
 import { FOOTER_AISLES } from "./data/footer";
-import { ALPHA_ROWS, BRA_DETAIL, GUIDE_STEPS, NIGHTY_ROWS } from "./data/size-guide";
+import { ShopView } from "./pages/ShopView";
+import { SizesView } from "./pages/SizesView";
+import { AtelierView } from "./pages/AtelierView";
 
 type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact" | "sizes";
 type User = { id: number; email: string; role?: string };
@@ -67,11 +69,63 @@ function printSheet(title: string, bodyHtml: string) {
   setTimeout(() => w.print(), 250);
 }
 
+
+function pathFor(view: View, opts?: { cat?: string; product?: Product | null }): string {
+  if (view === "home") return "/";
+  if (view === "shop") {
+    const cat = opts?.cat;
+    return cat && cat !== "All" ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop";
+  }
+  if (view === "product") return opts?.product ? `/shop/${opts.product.id}` : "/shop";
+  if (view === "sizes") return "/size-guide";
+  if (view === "about") return "/atelier";
+  if (view === "contact") return "/contact";
+  if (view === "cart") return "/cart";
+  if (view === "checkout") return "/checkout";
+  if (view === "login") return "/login";
+  if (view === "register") return "/register";
+  if (view === "account") return "/account";
+  if (view === "admin") return "/admin";
+  return "/";
+}
+
+function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; product: Product | null } {
+  const url = new URL(window.location.href);
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  const catParam = url.searchParams.get("cat");
+  const cat = CATEGORIES.includes(catParam as (typeof CATEGORIES)[number])
+    ? (catParam as (typeof CATEGORIES)[number])
+    : "All";
+  if (path === "/shop") return { view: "shop", cat, product: null };
+  if (path.startsWith("/shop/")) {
+    const id = decodeURIComponent(path.slice("/shop/".length));
+    const product = PRODUCTS.find((p) => p.id === id) ?? null;
+    return product
+      ? { view: "product", cat: product.category, product }
+      : { view: "shop", cat, product: null };
+  }
+  const map: Record<string, View> = {
+    "/size-guide": "sizes",
+    "/sizes": "sizes",
+    "/atelier": "about",
+    "/about": "about",
+    "/contact": "contact",
+    "/cart": "cart",
+    "/checkout": "checkout",
+    "/login": "login",
+    "/register": "register",
+    "/account": "account",
+    "/admin": "admin",
+  };
+  return { view: map[path] ?? "home", cat, product: null };
+}
+
 function App() {
-  const [view, setView] = useState<View>("home");
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("All");
+  const boot = parseLocation();
+  const [view, setViewRaw] = useState<View>(boot.view);
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>(boot.cat);
   const [pickSize, setPickSize] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState<Product | null>(null);
+  const [selected, setSelected] = useState<Product | null>(boot.product);
   const [cart, setCart] = useState<CartLine[]>(() => {
     try {
       const raw = JSON.parse(localStorage.getItem(CART_KEY) || "[]") as Array<{ id: string; qty: number; size?: string }>;
@@ -128,11 +182,34 @@ function App() {
   useEffect(() => { void refreshMe(token); }, [token, refreshMe]);
   useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart.map((l) => ({ id: l.product.id, qty: l.qty, size: l.size })))); }, [cart]);
 
+  useEffect(() => {
+    const onPop = () => {
+      const loc = parseLocation();
+      setViewRaw(loc.view);
+      setCategory(loc.cat);
+      setSelected(loc.product);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   function persistToken(t: string | null) {
     if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY);
     setToken(t);
   }
-  function goShop(cat: (typeof CATEGORIES)[number] = "All") { setCategory(cat); setSelected(null); setView("shop"); setMenuOpen(false); }
+
+  function go(next: View, extra?: { cat?: (typeof CATEGORIES)[number]; product?: Product | null }) {
+    if (extra?.cat) setCategory(extra.cat);
+    if (extra && "product" in extra) setSelected(extra.product ?? null);
+    setViewRaw(next);
+    setMenuOpen(false);
+    const url = pathFor(next, { cat: extra?.cat ?? category, product: extra && "product" in extra ? extra.product : next === "product" ? selected : null });
+    const now = `${window.location.pathname}${window.location.search}`;
+    if (now !== url) window.history.pushState({ view: next }, "", url);
+  }
+  const setView = (next: View) => go(next);
+
+  function goShop(cat: (typeof CATEGORIES)[number] = "All") { go("shop", { cat, product: null }); }
   function sizeOf(p: Product) { return pickSize[p.id] || defaultSize(p); }
   function addToCart(p: Product, size = sizeOf(p)) {
     setCart((prev) => {
@@ -256,7 +333,7 @@ function App() {
         <button type="button" onClick={() => setView("home")}>Home</button>
         <button type="button" onClick={() => goShop()}>Shop</button>
         <button type="button" onClick={() => { setView("sizes"); setMenuOpen(false); }}>Sizes</button>
-        <button type="button" onClick={() => setView("about")}>About</button>
+        <button type="button" onClick={() => go("about")}>Atelier</button>
         <button type="button" onClick={() => setView("contact")}>Contact</button>
       </nav>
       <div className="topbar-right">
@@ -473,14 +550,12 @@ function App() {
     </main>);
   }
 
-  if (view === "about") return shell(<main className="page"><h1 className="page-title">Femme</h1><p className="lede">Comfort, confidence and care.</p></main>);
+  if (view === "about") return <div className="store">{header}<AtelierView onShop={(c) => goShop(c ?? "All")} onSizes={() => go("sizes")} />{footer}</div>;
   if (view === "contact") return shell(<main className="page"><h1 className="page-title">Contact</h1><p className="muted">info@silkmoments.com</p></main>);
   const productGrid = (
-    <>
-      <div className="nav-cats">{CATEGORIES.map((c) => <button key={c} type="button" className={category === c ? "active" : ""} onClick={() => { setCategory(c); setView("shop"); }}>{c}</button>)}</div>
       <div className="grid shop-grid">{filtered.map((p) => (
         <article key={p.id} className="card product-tile">
-          <button type="button" className="card-hit" onClick={() => { setSelected(p); setView("product"); }}>
+          <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
             <div className="card-visual">
               <img className="ken" src={p.image} alt="" />
               {p.tag && <span className="tag on-dark">{p.tag}</span>}
@@ -501,25 +576,10 @@ function App() {
           </div>
         </article>
       ))}</div>
-    </>
   );
 
   if (view === "sizes") {
-    return shell(<main className="page">
-      <p className="eyebrow">Fit lab</p>
-      <h1 className="page-title">Size guide</h1>
-      <p className="lede">Tape snug, stand easy. Charts below are the atelier starting point — silk has give.</p>
-      <ol className="guide-steps">{GUIDE_STEPS.map((s) => <li key={s.title}><strong>{s.title}</strong><p className="muted">{s.body}</p></li>)}</ol>
-      <h2 className="section-title">Bras</h2>
-      <div className="table-wrap"><table className="chart"><thead><tr><th>Size</th><th>Band</th><th>Cup</th><th>Underbust cm</th><th>Bust cm</th><th>Sisters</th><th>EU</th><th>FR</th></tr></thead>
-        <tbody>{BRA_DETAIL.map((r) => <tr key={r.size}><td>{r.size}</td><td>{r.band}</td><td>{r.cup}</td><td>{r.underCm}</td><td>{r.bustCm}</td><td>{r.sisters}</td><td>{r.eu}</td><td>{r.fr}</td></tr>)}</tbody></table></div>
-      <h2 className="section-title">Body</h2>
-      <div className="table-wrap"><table className="chart"><thead><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Hip</th><th>UK</th><th>US</th><th>EU</th></tr></thead>
-        <tbody>{ALPHA_ROWS.map((r) => <tr key={r.size}><td>{r.size}</td><td>{r.bust}</td><td>{r.waist}</td><td>{r.hip}</td><td>{r.uk}</td><td>{r.us}</td><td>{r.eu}</td></tr>)}</tbody></table></div>
-      <h2 className="section-title">Nightwear</h2>
-      <div className="table-wrap"><table className="chart"><thead><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Hip</th><th>Length</th><th>Note</th></tr></thead>
-        <tbody>{NIGHTY_ROWS.map((r) => <tr key={r.size}><td>{r.size}</td><td>{r.bust}</td><td>{r.waist}</td><td>{r.hip}</td><td>{r.length}</td><td>{r.note}</td></tr>)}</tbody></table></div>
-    </main>);
+    return <div className="store">{header}<SizesView />{footer}</div>;
   }
 
   if (view === "home") {
@@ -564,7 +624,7 @@ function App() {
         <h2 className="page-title">Lingerie in motion</h2>
         <div className="grid shop-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
-            <button type="button" className="card-hit" onClick={() => { setSelected(p); setView("product"); }}>
+            <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
               <div className="card-visual"><img className="ken" src={p.image} alt="" />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
             </button>
             <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
@@ -584,10 +644,7 @@ function App() {
   }
 
   if (view === "shop") {
-    return shell(<main className="page">
-      <h1 className="page-title">{category === "All" ? "Shop" : category}</h1>
-      {productGrid}
-    </main>);
+    return <div className="store">{header}<ShopView category={category} count={filtered.length} productGrid={productGrid} onCat={goShop} onSizes={() => go("sizes")} />{footer}</div>;
   }
   return shell(<main className="page"><h1 className="page-title">Femme</h1></main>);
 }
