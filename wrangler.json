@@ -24,6 +24,7 @@
     }
   ],
   "vars": {
-    "APP_URL": "https://vite-react-template.limefashion52.workers.dev"
+    "APP_URL": "https://vite-react-template.limefashion52.workers.dev",
+    "ADMIN_EMAILS": "kscfeeds@gmail.com,info@silkmoments.com"
   }
 }
