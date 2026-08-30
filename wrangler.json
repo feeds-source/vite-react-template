@@ -1,26 +1,30 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "vite-react-template",
-	"main": "./src/worker/index.ts",
-	"compatibility_date": "2025-10-08",
-	"compatibility_flags": ["nodejs_compat"],
-	"observability": {
-		"enabled": true
-	},
-	"upload_source_maps": true,
-	"assets": {
-		"directory": "./dist/client",
-		"not_found_handling": "single-page-application"
-	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "vite-react-db",
-			"database_id": "local-dev-placeholder",
-			"migrations_dir": "migrations"
-		}
-	],
-	"vars": {
-		"APP_URL": "http://localhost:5173"
-	}
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vite-react-template",
+  "account_id": "1e611220afd75688b509ba299e98bde7",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vite-react-db",
+      "database_id": "0e2f9300-7343-4825-9e90-cb525bcba172",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "APP_URL": "https://vite-react-template.limefashion52.workers.dev",
+    "ADMIN_EMAILS": "kscfeeds@gmail.com,info@silkmoments.com"
+  }
 }
