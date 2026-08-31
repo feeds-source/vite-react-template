@@ -1,6 +1,7 @@
 import { AISLES } from "./banners";
 import { CATEGORIES, PRODUCTS, type Category, type Product } from "./catalog";
 import { CAT_HERO } from "./house";
+import { PRODUCT_KEYWORDS } from "./seo";
 
 export type AisleHit = {
   cat: Category;
@@ -99,6 +100,7 @@ export function searchHouse(raw: string, limit = 6): HouseHit {
       score(p.description, query, tokens),
       score(p.tag ?? "", query, tokens),
       score(p.id.replace(/-/g, " "), query, tokens),
+      score(PRODUCT_KEYWORDS[p.id] ?? "", query, tokens),
       score(extra, query, tokens) * 0.6,
     );
     return { p, s };

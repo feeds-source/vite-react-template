@@ -10,6 +10,7 @@ import { SearchView } from "./pages/SearchView";
 import { SearchModal } from "./pages/SearchModal";
 import { searchHouse } from "./data/search";
 import type { PageHit } from "./data/search";
+import { applyDocumentSeo } from "./data/seo";
 
 type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact" | "sizes" | "search";
 type User = { id: number; email: string; role?: string };
@@ -184,6 +185,10 @@ function App() {
     if (room) return PRODUCTS.filter((p) => (ROOMS[room] as readonly string[]).includes(p.category));
     return PRODUCTS;
   }, [category, room]);
+
+  useEffect(() => {
+    applyDocumentSeo({ view, product: selected, category, room });
+  }, [view, selected, category, room]);
 
   const refreshMe = useCallback(async (t: string | null) => {
     if (!t) { setUser(null); return; }
