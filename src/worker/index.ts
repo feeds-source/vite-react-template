@@ -20,6 +20,7 @@ import {
 	listAdminOrders,
 	listMyOrders,
 } from "./orders";
+import { buildRobotsTxt, buildSitemapXml } from "./sitemap";
 
 type Note = {
 	id: number;
@@ -33,6 +34,20 @@ type Note = {
 const app = new Hono<AppEnv>();
 
 app.use("/api/*", cors());
+
+app.get("/sitemap.xml", (c) =>
+	c.body(buildSitemapXml(), 200, {
+		"content-type": "application/xml; charset=utf-8",
+		"cache-control": "public, max-age=3600",
+	}),
+);
+
+app.get("/robots.txt", (c) =>
+	c.body(buildRobotsTxt(), 200, {
+		"content-type": "text/plain; charset=utf-8",
+		"cache-control": "public, max-age=3600",
+	}),
+);
 
 async function sha256Hex(value: string): Promise<string> {
 	const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
