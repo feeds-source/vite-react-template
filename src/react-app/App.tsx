@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode, type SyntheticEvent } from "react";
 import "./App.css";
 import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT } from "./data/banners";
 import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Product } from "./data/catalog";
@@ -13,6 +13,13 @@ import type { PageHit } from "./data/search";
 
 type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact" | "sizes" | "search";
 type User = { id: number; email: string; role?: string };
+
+function coverFallback(e: SyntheticEvent<HTMLImageElement>) {
+  const el = e.currentTarget;
+  if (el.dataset.fallback === "1") return;
+  el.dataset.fallback = "1";
+  el.src = "/banners/hero.jpg";
+}
 type CartLine = { product: Product; qty: number; size: string };
 type OrderItem = { product_id: string; name: string; qty: number; unit_cents: number };
 type OrderEmail = { id: number; kind: string; to_email: string; subject: string; body: string; status: string };
@@ -627,7 +634,7 @@ function App() {
         <article key={p.id} className="card product-tile">
           <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
             <div className="card-visual">
-              <img className="ken" src={p.image} alt="" />
+              <img className="ken" src={p.image} alt="" onError={coverFallback} />
               {p.tag && <span className="tag on-dark">{p.tag}</span>}
             </div>
           </button>
@@ -653,7 +660,7 @@ function App() {
   }
 
   if (view === "home") {
-    const featured = PRODUCTS.filter((p) => p.tag);
+    const featured = PRODUCTS.filter((p) => p.tag).slice(0, 6);
     return <div className="store">{header}
       <section className="cine-hero">
         <img className="ken" src={HERO.poster} alt="" />
@@ -730,10 +737,10 @@ function App() {
           </div>
           <button type="button" className="text-link" onClick={() => goShop()}>View all pieces</button>
         </div>
-        <div className="grid shop-grid">{featured.map((p) => (
+        <div className="grid highlights-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
             <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
-              <div className="card-visual"><img className="ken" src={p.image} alt="" />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
+              <div className="card-visual"><img className="ken" src={p.image} alt="" onError={coverFallback} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
             </button>
             <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
             <div className="card-actions">
@@ -750,7 +757,7 @@ function App() {
       <section className="campaign-home">
         {SPLIT.map((p) => (
           <button key={p.title} type="button" className="campaign-panel" onClick={() => goRoom(p.room)}>
-            <img className="ken" src={p.image} alt="" />
+            <img className="ken" src={p.image} alt="" onError={coverFallback} />
             <div className="hero-veil" />
             <span className="eyebrow">{p.kicker}</span>
             <strong>{p.title}</strong>
