@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import "./App.css";
-import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT } from "./data/banners";
+import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT } from "./data/banners";
 import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Product } from "./data/catalog";
 import { FOOTER_AISLES, ROOMS, type Room } from "./data/footer";
 import { ShopView } from "./pages/ShopView";
@@ -685,7 +685,7 @@ function App() {
       <div className="marquee" aria-hidden="true"><div className="marquee-track">{[...MARQUEE, ...MARQUEE].map((m, i) => <img key={i} src={m.src} alt="" />)}</div></div>
       <section className="campaign-home">
         {CAMPAIGNS.map((c) => (
-          <button key={c.id} type="button" className="campaign-panel" onClick={() => goRoom(c.kicker as Room)}>
+          <button key={c.id} type="button" className="campaign-panel" onClick={() => goRoom(c.room)}>
             <img className="ken" src={c.poster} alt="" />
             {c.video && <video className="motion-video" autoPlay muted loop playsInline poster={c.poster}><source src={c.video} type="video/mp4" /></video>}
             <div className="hero-veil" />
@@ -712,19 +712,24 @@ function App() {
         </div>
       </section>
       <main className="page">
-        <p className="eyebrow">New aisles</p>
-        <h2 className="page-title">More of the house</h2>
+        <p className="eyebrow">The House</p>
+        <h2 className="page-title">Walk the house</h2>
         <div className="aisle-grid">
           {AISLES.map((a) => (
-            <button key={a.cat} type="button" className="aisle" onClick={() => goShop(a.cat)}>
+            <button key={a.cat} type="button" className="aisle" onClick={() => goRoom(a.room)}>
               <img src={a.image} alt="" />
               <div className="hero-veil" />
               <span><em>{a.cat}</em><b>{a.title}</b></span>
             </button>
           ))}
         </div>
-        <p className="eyebrow" style={{marginTop:"3rem"}}>Exotic collection</p>
-        <h2 className="page-title">Lingerie in motion</h2>
+        <div className="catalog-head" style={{marginTop:"3rem"}}>
+          <div>
+            <p className="eyebrow">The Collection</p>
+            <h2 className="page-title">House Highlights</h2>
+          </div>
+          <button type="button" className="text-link" onClick={() => goShop()}>View all pieces</button>
+        </div>
         <div className="grid shop-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
             <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
@@ -742,6 +747,16 @@ function App() {
           </article>
         ))}</div>
       </main>
+      <section className="campaign-home">
+        {SPLIT.map((p) => (
+          <button key={p.title} type="button" className="campaign-panel" onClick={() => goRoom(p.room)}>
+            <img className="ken" src={p.image} alt="" />
+            <div className="hero-veil" />
+            <span className="eyebrow">{p.kicker}</span>
+            <strong>{p.title}</strong>
+          </button>
+        ))}
+      </section>
       {footer}
     </div>;
   }
@@ -750,7 +765,7 @@ function App() {
     return <div className="store">{header}<SearchView query={searchQuery} onQuery={(q) => go("search", { q })} onAisle={goShop} onPage={goPage}>{productGrid}</SearchView>{footer}</div>;
   }
   if (view === "shop") {
-    return <div className="store">{header}<ShopView category={category} room={room} count={filtered.length} productGrid={productGrid} onCat={goShop} onSizes={() => go("sizes")} />{footer}</div>;
+    return <div className="store">{header}<ShopView category={category} room={room} count={filtered.length} productGrid={productGrid} onCat={goShop} onRoom={goRoom} onSizes={() => go("sizes")} />{footer}</div>;
   }
   return shell(<main className="page"><h1 className="page-title">Femme</h1></main>);
 }

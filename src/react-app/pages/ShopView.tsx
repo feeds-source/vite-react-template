@@ -10,6 +10,7 @@ export function ShopView({
   count,
   productGrid,
   onCat,
+  onRoom,
   onSizes,
 }: {
   category: (typeof CATEGORIES)[number];
@@ -17,9 +18,10 @@ export function ShopView({
   count: number;
   productGrid: ReactNode;
   onCat: (c: (typeof CATEGORIES)[number]) => void;
+  onRoom: (room: Room) => void;
   onSizes: () => void;
 }) {
-  const campaign = room ? CAMPAIGNS.find((c) => c.kicker === room) : null;
+  const campaign = room ? CAMPAIGNS.find((c) => c.room === room) : null;
   const hero = category !== "All" ? CAT_HERO[category] : campaign
     ? { image: campaign.poster, video: campaign.video, kicker: campaign.kicker, body: campaign.title }
     : CAT_HERO.All;
@@ -43,11 +45,11 @@ export function ShopView({
 
       {category === "All" && !room ? (
         <section className="page">
-          <p className="eyebrow">Aisles</p>
+          <p className="eyebrow">The House</p>
           <h2 className="page-title">Walk the house</h2>
           <div className="aisle-grid">
             {AISLES.map((a) => (
-              <button key={a.cat} type="button" className="aisle" onClick={() => onCat(a.cat)}>
+              <button key={a.cat} type="button" className="aisle" onClick={() => onRoom(a.room)}>
                 <img src={a.image} alt="" />
                 <div className="hero-veil" />
                 <span>
