@@ -730,7 +730,7 @@ function App() {
             </button>
           ))}
         </div>
-        <div className="catalog-head" style={{marginTop:"3rem"}}>
+        <div className="catalog-head">
           <div>
             <p className="eyebrow">The Collection</p>
             <h2 className="page-title">House Highlights</h2>
