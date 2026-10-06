@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { chartFor, type Product } from "../data/catalog";
 import { ALPHA_ROWS, GOWN_ROWS, NIGHTY_ROWS } from "../data/size-guide";
 
@@ -66,13 +66,6 @@ export function FitView({
   const shape = SHAPES.find((s) => s.id === shapeId) ?? SHAPES[1];
   const garment = garmentOf(product, size);
   const ease = garment.hip / shape.hip;
-
-  useEffect(() => {
-    if (!spin) return;
-    const id = window.setInterval(() => setAngle((a) => (a + 1.4) % 360), 30);
-    return () => window.clearInterval(id);
-  }, [spin]);
-
   const points = [
     ["Bust", easeWord(garment.bust, shape.bust)],
     ["Waist", easeWord(garment.waist, shape.waist)],
@@ -96,7 +89,7 @@ export function FitView({
       >
         <div className="fit-scene">
           <div
-            className="fit-turn"
+            className={`fit-turn${spin && !drag.current ? " spinning" : ""}`}
             style={{
               transform: `rotateY(${angle}deg)`,
               ["--form-bust" as string]: `${shape.bust / 90}`,

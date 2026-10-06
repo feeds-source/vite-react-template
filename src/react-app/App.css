@@ -98,6 +98,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .fit-stage:active { cursor: grabbing; }
 .fit-scene { position: absolute; inset: 8% 18% 14%; perspective: 900px; }
 .fit-turn { position: absolute; inset: 0; transform-style: preserve-3d; }
+.fit-turn.spinning { animation: fit-spin 16s linear infinite; }
+@keyframes fit-spin { to { transform: rotateY(360deg); } }
 .fit-face { position: absolute; inset: 0; background-size: cover; background-position: center; backface-visibility: hidden;
   clip-path: polygon(50% 4%, 62% 8%, calc(50% + 18% * var(--form-bust, 1)) 22%, calc(50% + 10% * var(--form-waist, 1)) 42%, calc(50% + 22% * var(--form-hip, 1) * var(--garment, 1)) 70%, calc(50% + 16% * var(--garment, 1)) 98%, calc(50% - 16% * var(--garment, 1)) 98%, calc(50% - 22% * var(--form-hip, 1) * var(--garment, 1)) 70%, calc(50% - 10% * var(--form-waist, 1)) 42%, calc(50% - 18% * var(--form-bust, 1)) 22%, 38% 8%);
 }
