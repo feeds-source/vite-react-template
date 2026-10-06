@@ -6,6 +6,9 @@ interface Env {
 	GITHUB_CLIENT_SECRET: string;
 	GOOGLE_CLIENT_ID: string;
 	GOOGLE_CLIENT_SECRET: string;
+	AUTH0_DOMAIN: string;
+	AUTH0_CLIENT_ID: string;
+	AUTH0_CLIENT_SECRET: string;
 	OAUTH_STATE_SECRET: string;
 	ADMIN_EMAILS: string;
 }

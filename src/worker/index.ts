@@ -63,6 +63,7 @@ app.get("/api/", (c) =>
 		oauth: {
 			github: Boolean(c.env.GITHUB_CLIENT_ID),
 			google: Boolean(c.env.GOOGLE_CLIENT_ID),
+			auth0: Boolean(c.env.AUTH0_CLIENT_ID && c.env.AUTH0_DOMAIN),
 		},
 	}),
 );
@@ -205,7 +206,7 @@ app.get("/api/admin/orders", requireAuth, requireAdmin, (c) => listAdminOrders(c
 app.post("/api/admin/orders/:id/confirm", requireAuth, requireAdmin, (c) => confirmOrder(c));
 app.post("/api/admin/orders/:id/dispatch", requireAuth, requireAdmin, (c) => dispatchOrder(c));
 
-const OAUTH_PROVIDERS = new Set<OAuthProvider>(["github", "google"]);
+const OAUTH_PROVIDERS = new Set<OAuthProvider>(["github", "google", "auth0"]);
 
 app.get("/api/auth/oauth/:provider", async (c) => {
 	const provider = c.req.param("provider") as OAuthProvider;

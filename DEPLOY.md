@@ -127,6 +127,9 @@ npx wrangler secret put GITHUB_CLIENT_ID
 npx wrangler secret put GITHUB_CLIENT_SECRET
 npx wrangler secret put GOOGLE_CLIENT_ID
 npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put AUTH0_DOMAIN
+npx wrangler secret put AUTH0_CLIENT_ID
+npx wrangler secret put AUTH0_CLIENT_SECRET
 npx wrangler secret put OAUTH_STATE_SECRET
 ```
 
@@ -134,6 +137,7 @@ Callbacks:
 
 - `https://www.silkmoments.com/api/auth/oauth/github/callback`
 - `https://www.silkmoments.com/api/auth/oauth/google/callback`
+- `https://www.silkmoments.com/api/auth/oauth/auth0/callback`
 
 ---
 

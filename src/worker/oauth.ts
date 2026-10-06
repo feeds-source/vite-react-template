@@ -2,7 +2,7 @@ import type { AppEnv } from "./auth";
 import { createSession, generateToken, hashPassword } from "./auth";
 import type { Context } from "hono";
 
-export type OAuthProvider = "github" | "google";
+export type OAuthProvider = "github" | "google" | "auth0";
 
 type OAuthProfile = {
 	provider: OAuthProvider;
@@ -81,6 +81,19 @@ export async function buildAuthorizeUrl(c: Context<AppEnv>, provider: OAuthProvi
 		return c.redirect(url.toString(), 302);
 	}
 
+	if (provider === "auth0") {
+		const clientId = c.env.AUTH0_CLIENT_ID;
+		const domain = auth0Host(c.env.AUTH0_DOMAIN);
+		if (!clientId || !domain) return c.json({ error: "Auth0 is not configured (AUTH0_DOMAIN, AUTH0_CLIENT_ID)" }, 503);
+		const url = new URL(`https://${domain}/authorize`);
+		url.searchParams.set("client_id", clientId);
+		url.searchParams.set("redirect_uri", redirectUri);
+		url.searchParams.set("response_type", "code");
+		url.searchParams.set("scope", "openid profile email");
+		url.searchParams.set("state", state);
+		return c.redirect(url.toString(), 302);
+	}
+
 	const clientId = c.env.GOOGLE_CLIENT_ID;
 	if (!clientId) return c.json({ error: "Google OAuth is not configured (GOOGLE_CLIENT_ID)" }, 503);
 	const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -139,6 +152,38 @@ async function exchangeGoogle(c: Context<AppEnv>, code: string, redirectUri: str
 	return { provider: "google", providerUserId: gUser.id, email: gUser.email.toLowerCase() };
 }
 
+function auth0Host(raw: string | undefined): string {
+	const host = (raw ?? "").trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+	return /^[a-z0-9.-]+$/i.test(host) ? host : "";
+}
+
+async function exchangeAuth0(c: Context<AppEnv>, code: string, redirectUri: string): Promise<OAuthProfile> {
+	const clientId = c.env.AUTH0_CLIENT_ID;
+	const clientSecret = c.env.AUTH0_CLIENT_SECRET;
+	const domain = auth0Host(c.env.AUTH0_DOMAIN);
+	if (!clientId || !clientSecret || !domain) throw new Error("Auth0 not configured");
+	const tokenRes = await fetch(`https://${domain}/oauth/token`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			grant_type: "authorization_code",
+			client_id: clientId,
+			client_secret: clientSecret,
+			code,
+			redirect_uri: redirectUri,
+		}),
+	});
+	const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string };
+	if (!tokenData.access_token) throw new Error(tokenData.error || "Failed to get Auth0 access token");
+	const userRes = await fetch(`https://${domain}/userinfo`, {
+		headers: { Authorization: `Bearer ${tokenData.access_token}` },
+	});
+	const user = (await userRes.json()) as { sub?: string; email?: string };
+	if (!user.sub) throw new Error("Failed to fetch Auth0 user profile");
+	const email = (user.email || `${user.sub}@users.noreply.auth0.com`).toLowerCase();
+	return { provider: "auth0", providerUserId: user.sub, email };
+}
+
 export async function upsertOAuthUser(db: D1Database, profile: OAuthProfile): Promise<{ token: string; user: { id: number; email: string } }> {
 	const linked = await db.prepare(`SELECT u.id, u.email FROM oauth_accounts oa JOIN users u ON u.id = oa.user_id WHERE oa.provider = ? AND oa.provider_user_id = ?`).bind(profile.provider, profile.providerUserId).first<{ id: number; email: string }>();
 	if (linked) {
@@ -170,7 +215,11 @@ export async function handleOAuthCallback(c: Context<AppEnv>, provider: OAuthPro
 	const origin = getAppOrigin(c);
 	const redirectUri = `${origin}/api/auth/oauth/${provider}/callback`;
 	try {
-		const profile = provider === "github" ? await exchangeGitHub(c, code, redirectUri) : await exchangeGoogle(c, code, redirectUri);
+		const profile = provider === "github"
+			? await exchangeGitHub(c, code, redirectUri)
+			: provider === "google"
+				? await exchangeGoogle(c, code, redirectUri)
+				: await exchangeAuth0(c, code, redirectUri);
 		const { token } = await upsertOAuthUser(c.env.DB, profile);
 		return c.redirect(`/?auth_token=${encodeURIComponent(token)}${nextQs}`, 302);
 	} catch (e) {

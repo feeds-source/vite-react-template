@@ -76,7 +76,12 @@ cp .dev.vars.example .dev.vars
    - Authorized redirect: `http://localhost:5173/api/auth/oauth/google/callback`
    - Put Client ID / Secret in `.dev.vars`
 
-4. Restart `npm run dev`.
+4. **Auth0** → Applications → Regular Web Application
+
+   - Allowed Callback URL: `http://localhost:5173/api/auth/oauth/auth0/callback`
+   - Put domain, Client ID, and Secret in `.dev.vars`
+
+5. Restart `npm run dev`.
 
 ### Production secrets
 
@@ -87,6 +92,9 @@ npx wrangler secret put GITHUB_CLIENT_ID
 npx wrangler secret put GITHUB_CLIENT_SECRET
 npx wrangler secret put GOOGLE_CLIENT_ID
 npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put AUTH0_DOMAIN
+npx wrangler secret put AUTH0_CLIENT_ID
+npx wrangler secret put AUTH0_CLIENT_SECRET
 npx wrangler secret put OAUTH_STATE_SECRET
 ```
 
@@ -115,7 +123,7 @@ CI: [`.github/workflows/npm-audit.yml`](.github/workflows/npm-audit.yml). Auto-f
 | `POST` | `/api/auth/login` | No | Email/password login |
 | `POST` | `/api/auth/logout` | Yes | Invalidate session |
 | `GET` | `/api/auth/me` | Yes | Current user |
-| `GET` | `/api/auth/oauth/:provider` | No | Start OAuth (`github` \| `google`) |
+| `GET` | `/api/auth/oauth/:provider` | No | Start OAuth (`github` \| `google` \| `auth0`) |
 | `GET` | `/api/auth/oauth/:provider/callback` | No | OAuth callback |
 
 OAuth success redirects to `/?auth_token=...`. Errors to `/?auth_error=...`.

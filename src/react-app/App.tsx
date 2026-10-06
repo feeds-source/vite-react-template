@@ -615,6 +615,7 @@ function App() {
       <p className="auth-links">
         <button type="button" className="text-link" onClick={() => setView(isLogin ? "register" : "login")}>{isLogin ? "Register" : "Sign in"}</button>
         <a className="cta google" href="/api/auth/oauth/google?next=account">Google</a>
+        <a className="cta google" href="/api/auth/oauth/auth0?next=account">Auth0</a>
       </p>
     </main>);
   }
@@ -743,6 +744,7 @@ function App() {
             {authError && <p className="auth-error">{authError}</p>}
             <button type="submit" className="cta" disabled={authBusy || cart.length === 0}>{authBusy ? "Placing…" : `Confirm order · ${money(q.total)}`}</button>
             {!user && <a className="cta google" href="/api/auth/oauth/google?next=checkout" onClick={() => localStorage.setItem(NEXT_KEY, "checkout")}>Or continue with Google</a>}
+            {!user && <a className="cta google" href="/api/auth/oauth/auth0?next=checkout" onClick={() => localStorage.setItem(NEXT_KEY, "checkout")}>Or continue with Auth0</a>}
           </form>
           </div>
           <aside className="cart-sum receipt-sheet">
