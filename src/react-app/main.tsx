@@ -4,32 +4,20 @@ import { Auth0Provider } from "@auth0/auth0-react";
 import "./index.css";
 import App from "./App.tsx";
 
-const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN;
-const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
+const root = document.getElementById("root");
+if (!root) throw new Error("Root element missing");
 
-const app = <App />;
-
-createRoot(document.getElementById("root")!).render(
+createRoot(root).render(
 	<StrictMode>
-		{auth0Domain && auth0ClientId ? (
-			<Auth0Provider
-				domain={auth0Domain}
-				clientId={auth0ClientId}
-				authorizationParams={{ redirect_uri: window.location.origin }}
-			>
-				{app}
-			</Auth0Provider>
-		) : (
-			app
-		)}
+		<Auth0Provider
+			domain="silkmoments.us.auth0.com"
+			clientId="NFWd6eudI4TbilRjYSsduUjIqGtrBYn5"
+			authorizationParams={{ redirect_uri: window.location.origin }}
+		>
+			<App />
+		</Auth0Provider>
 	</StrictMode>,
 );
-
-if ("serviceWorker" in navigator) {
-	window.addEventListener("load", () => {
-		void navigator.serviceWorker.register("/sw.js");
-	});
-}
 
 if ("serviceWorker" in navigator) {
 	window.addEventListener("load", () => {
