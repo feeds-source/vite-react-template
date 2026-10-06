@@ -298,6 +298,10 @@ function App() {
     setAuthBusy(false);
     if (!ok || !data.order) { setAuthError(data.error ?? "Could not place order"); return; }
     setPlaced(data.order); setMyOrders((prev) => [data.order!, ...prev]); setCart([]);
+    const placedUrl = "/checkout?placed=1";
+    if (`${window.location.pathname}${window.location.search}` !== placedUrl) {
+      window.history.pushState({ view: "checkout", placed: true }, "", placedUrl);
+    }
   }
   async function adminConfirm(id: number) {
     if (!token) return;
