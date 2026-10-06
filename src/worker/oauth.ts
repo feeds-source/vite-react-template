@@ -184,6 +184,22 @@ async function exchangeAuth0(c: Context<AppEnv>, code: string, redirectUri: stri
 	return { provider: "auth0", providerUserId: user.sub, email };
 }
 
+export async function acceptAuth0Session(c: Context<AppEnv>): Promise<Response> {
+	const header = c.req.header("Authorization") ?? "";
+	const access = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+	if (!access || access.length > 8000) return c.json({ error: "missing token" }, 401);
+	const domain = auth0Host(c.env.AUTH0_DOMAIN) || "silkmoments.us.auth0.com";
+	const userRes = await fetch(`https://${domain}/userinfo`, {
+		headers: { Authorization: `Bearer ${access}` },
+	});
+	if (!userRes.ok) return c.json({ error: "invalid token" }, 401);
+	const user = (await userRes.json()) as { sub?: string; email?: string };
+	if (!user.sub) return c.json({ error: "invalid token" }, 401);
+	const email = (user.email || `${user.sub}@users.noreply.auth0.com`).toLowerCase();
+	const session = await upsertOAuthUser(c.env.DB, { provider: "auth0", providerUserId: user.sub, email });
+	return c.json(session);
+}
+
 export async function upsertOAuthUser(db: D1Database, profile: OAuthProfile): Promise<{ token: string; user: { id: number; email: string } }> {
 	const linked = await db.prepare(`SELECT u.id, u.email FROM oauth_accounts oa JOIN users u ON u.id = oa.user_id WHERE oa.provider = ? AND oa.provider_user_id = ?`).bind(profile.provider, profile.providerUserId).first<{ id: number; email: string }>();
 	if (linked) {

@@ -221,9 +221,9 @@ function App() {
     error: auth0Error,
     loginWithRedirect: login,
     logout: auth0Logout,
+    getAccessTokenSilently,
     user: auth0User,
   } = useAuth0();
-  const signup = () => login({ authorizationParams: { screen_hint: "signup" } });
   const logoutAuth0 = () => auth0Logout({ logoutParams: { returnTo: window.location.origin } });
   const boot = parseLocation();
   const [view, setViewRaw] = useState<View>(boot.view);
@@ -241,15 +241,12 @@ function App() {
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState<User | null>(null);
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [shipName, setShipName] = useState("");
   const [shipAddr, setShipAddr] = useState("");
   const [shipCountry, setShipCountry] = useState<(typeof COUNTRIES)[number]>("United Arab Emirates");
   const [payMethod, setPayMethod] = useState<"card" | "cod">("card");
-  const [haveAccount, setHaveAccount] = useState(false);
   const [notes, setNotes] = useState<Array<{ id: number; created_at: string; name: string; email: string; order_no: string; body: string }>>([]);
   const [placed, setPlaced] = useState<StoreOrder | null>(null);
   const [myOrders, setMyOrders] = useState<StoreOrder[]>([]);
@@ -313,6 +310,37 @@ function App() {
     }
   }, []);
   useEffect(() => { void refreshMe(token); }, [token, refreshMe]);
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || token) return;
+    let cancel = false;
+    (async () => {
+      try {
+        const access = await getAccessTokenSilently();
+        const res = await fetch("/api/auth/auth0/session", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${access}` },
+        });
+        const data = (await res.json()) as { token?: string; error?: string };
+        if (cancel) return;
+        if (!res.ok || !data.token) {
+          setAuthError(data.error ?? "Could not open your atelier account");
+          return;
+        }
+        persistToken(data.token);
+      } catch (err) {
+        if (!cancel) setAuthError(err instanceof Error ? err.message : "Could not open your atelier account");
+      }
+    })();
+    return () => { cancel = true; };
+  }, [isLoading, isAuthenticated, token, getAccessTokenSilently]);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const next = localStorage.getItem(NEXT_KEY);
+    if (next === "checkout" || next === "account" || next === "cart") {
+      localStorage.removeItem(NEXT_KEY);
+      setView(next as View);
+    }
+  }, [isAuthenticated]);
   useEffect(() => {
     if (view === "account" && token) void refreshMe(token);
   }, [view, token, refreshMe]);
@@ -388,16 +416,10 @@ function App() {
   function setQty(id: string, size: string, qty: number) {
     setCart((prev) => qty <= 0 ? prev.filter((l) => !(l.product.id === id && l.size === size)) : prev.map((l) => (l.product.id === id && l.size === size ? { ...l, qty } : l)));
   }
-  async function handleAuth(mode: "login" | "register") {
-    setAuthError(""); setAuthBusy(true);
-    const path = mode === "login" ? "/api/auth/login" : "/api/auth/register";
-    const { ok, data } = await api<{ token?: string; error?: string }>(path, { method: "POST", body: JSON.stringify({ email: authEmail, password: authPassword }) });
-    setAuthBusy(false);
-    if (!ok || !data.token) { setAuthError(data.error ?? "Something went wrong"); return; }
-    persistToken(data.token); setAuthPassword("");
-    const next = localStorage.getItem(NEXT_KEY);
-    localStorage.removeItem(NEXT_KEY);
-    setView(next === "checkout" ? "checkout" : "account");
+  function signIn(next: "account" | "checkout" = "account", screen?: "signup") {
+    localStorage.setItem(NEXT_KEY, next);
+    const authorizationParams = screen === "signup" ? { screen_hint: "signup" } : undefined;
+    void login({ authorizationParams, appState: { returnTo: next === "checkout" ? "/checkout" : "/account" } });
   }
   async function handleLogout() {
     if (token) await api("/api/auth/logout", { method: "POST", token });
@@ -425,16 +447,9 @@ function App() {
     setAuthBusy(true); setAuthError("");
     let auth = token;
     if (!auth) {
-      const path = haveAccount ? "/api/auth/login" : "/api/auth/register";
-      const signed = await api<{ token?: string; error?: string }>(path, { method: "POST", body: JSON.stringify({ email: authEmail, password: authPassword }) });
-      if (!signed.ok || !signed.data.token) {
-        setAuthBusy(false);
-        if (signed.data.error === "email already registered") setHaveAccount(true);
-        setAuthError(signed.data.error === "email already registered" ? "That email is already registered. Sign in instead." : (signed.data.error ?? "Could not sign you in"));
-        return;
-      }
-      auth = signed.data.token;
-      persistToken(auth);
+      setAuthBusy(false);
+      setAuthError("Sign in to place this order.");
+      return;
     }
     const { ok, data } = await api<{ order?: StoreOrder; error?: string }>("/api/orders", {
       method: "POST", token: auth,
@@ -572,8 +587,8 @@ function App() {
         {isAdmin && <button type="button" className="icon-btn" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Orders</button>}
         {user || isAuthenticated ? <button type="button" className="icon-btn" onClick={() => setView("account")}>Account</button> : (
           <>
-            <button type="button" className="icon-btn" onClick={() => void login()} disabled={isLoading}>{isLoading ? "Loading..." : "Login"}</button>
-            <button type="button" className="icon-btn" onClick={() => void signup()} disabled={isLoading}>Signup</button>
+            <button type="button" className="icon-btn" onClick={() => signIn("account")} disabled={isLoading}>{isLoading ? "Loading..." : "Login"}</button>
+            <button type="button" className="icon-btn" onClick={() => signIn("account", "signup")} disabled={isLoading}>Signup</button>
           </>
         )}
         <button type="button" className="icon-btn" onClick={() => setView("cart")}>Bag <em>{cartCount}</em></button>
@@ -632,23 +647,14 @@ function App() {
       ) : (
         <>
           {auth0Error && <p className="auth-error">Error: {auth0Error.message}</p>}
+          {authError && <p className="auth-error">{authError}</p>}
+          <p className="muted">One account, through Auth0.</p>
           <p className="auth-links">
-            <button type="button" className="cta" onClick={() => void login()}>Login</button>
-            <button type="button" className="cta ghost" onClick={() => void signup()}>Signup</button>
+            <button type="button" className="cta" onClick={() => signIn("account")} disabled={isLoading}>Login</button>
+            <button type="button" className="cta ghost" onClick={() => signIn("account", "signup")} disabled={isLoading}>Signup</button>
           </p>
         </>
       )}
-      <form className="contact-form" onSubmit={(e) => { e.preventDefault(); void handleAuth(isLogin ? "login" : "register"); }}>
-        <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
-        <label>Password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
-        {authError && <p className="auth-error">{authError}</p>}
-        <button type="submit" className="cta" disabled={authBusy}>{isLogin ? "Sign in" : "Create my account"}</button>
-      </form>
-      <p className="auth-links">
-        <button type="button" className="text-link" onClick={() => setView(isLogin ? "register" : "login")}>{isLogin ? "Register" : "Sign in"}</button>
-        <a className="cta google" href="/api/auth/oauth/google?next=account">Google</a>
-        <a className="cta google" href="/api/auth/oauth/auth0?next=account">Auth0</a>
-      </p>
     </main>);
   }
 
@@ -661,7 +667,7 @@ function App() {
           <pre>{JSON.stringify(auth0User, null, 2)}</pre>
         </>
       )}
-      {!user && !isAuthenticated ? <button type="button" className="text-link" onClick={() => void login()}>Login</button> : (
+      {!user && !isAuthenticated ? <button type="button" className="text-link" onClick={() => signIn("account")}>Login</button> : (
         <>
           <div className="account-actions">
             {isAdmin && <button type="button" className="cta" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin orders</button>}
@@ -773,17 +779,14 @@ function App() {
             </fieldset>
             <p className="muted">{payMethod === "card" ? "A secure pay link is emailed when the atelier confirms. The card number is not taken on this page." : "Pay when the parcel arrives."}</p>
             {!user && (
-              <>
-                <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
-                <label>Password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
-                <button type="button" className="text-link" onClick={() => setHaveAccount((v) => !v)}>{haveAccount ? "New here? Create the account as you order." : "I already have an account."}</button>
-              </>
+              <p className="auth-links">
+                <button type="button" className="cta" onClick={() => signIn("checkout")} disabled={isLoading}>Login</button>
+                <button type="button" className="cta ghost" onClick={() => signIn("checkout", "signup")} disabled={isLoading}>Signup</button>
+              </p>
             )}
             <p className="muted">{EXCHANGE}</p>
             {authError && <p className="auth-error">{authError}</p>}
-            <button type="submit" className="cta" disabled={authBusy || cart.length === 0}>{authBusy ? "Placing…" : `Confirm order · ${money(q.total)}`}</button>
-            {!user && <a className="cta google" href="/api/auth/oauth/google?next=checkout" onClick={() => localStorage.setItem(NEXT_KEY, "checkout")}>Or continue with Google</a>}
-            {!user && <a className="cta google" href="/api/auth/oauth/auth0?next=checkout" onClick={() => localStorage.setItem(NEXT_KEY, "checkout")}>Or continue with Auth0</a>}
+            <button type="submit" className="cta" disabled={authBusy || cart.length === 0 || !user}>{authBusy ? "Placing…" : `Confirm order · ${money(q.total)}`}</button>
           </form>
           </div>
           <aside className="cart-sum receipt-sheet">

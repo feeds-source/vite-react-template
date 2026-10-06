@@ -11,7 +11,7 @@ import {
 	resolveRole,
 	verifyPassword,
 } from "./auth";
-import { buildAuthorizeUrl, handleOAuthCallback, type OAuthProvider } from "./oauth";
+import { acceptAuth0Session, buildAuthorizeUrl, handleOAuthCallback, type OAuthProvider } from "./oauth";
 import {
 	confirmOrder,
 	createOrder,
@@ -207,6 +207,8 @@ app.post("/api/admin/orders/:id/confirm", requireAuth, requireAdmin, (c) => conf
 app.post("/api/admin/orders/:id/dispatch", requireAuth, requireAdmin, (c) => dispatchOrder(c));
 
 const OAUTH_PROVIDERS = new Set<OAuthProvider>(["github", "google", "auth0"]);
+
+app.post("/api/auth/auth0/session", (c) => acceptAuth0Session(c));
 
 app.get("/api/auth/oauth/:provider", async (c) => {
 	const provider = c.req.param("provider") as OAuthProvider;
