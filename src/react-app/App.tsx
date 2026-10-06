@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode, type SyntheticEvent } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import "./App.css";
 import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT, EXCHANGE } from "./data/banners";
 import { CATEGORIES, PRODUCTS, defaultSize, materialsFor, sizesFor, type Product } from "./data/catalog";
@@ -214,6 +215,16 @@ function ContactPage() {
 }
 
 function App() {
+  const {
+    isLoading,
+    isAuthenticated,
+    error: auth0Error,
+    loginWithRedirect: login,
+    logout: auth0Logout,
+    user: auth0User,
+  } = useAuth0();
+  const signup = () => login({ authorizationParams: { screen_hint: "signup" } });
+  const logoutAuth0 = () => auth0Logout({ logoutParams: { returnTo: window.location.origin } });
   const boot = parseLocation();
   const [view, setViewRaw] = useState<View>(boot.view);
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>(boot.cat);
@@ -390,7 +401,12 @@ function App() {
   }
   async function handleLogout() {
     if (token) await api("/api/auth/logout", { method: "POST", token });
-    persistToken(null); setView("home");
+    persistToken(null);
+    if (isAuthenticated) {
+      logoutAuth0();
+      return;
+    }
+    setView("home");
   }
   async function loadAdminOrders(filter = adminFilter) {
     if (!token) return;
@@ -554,10 +570,10 @@ function App() {
       <div className="topbar-right">
         <button type="button" className="icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search the atelier">Search</button>
         {isAdmin && <button type="button" className="icon-btn" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Orders</button>}
-        {user ? <button type="button" className="icon-btn" onClick={() => setView("account")}>Account</button> : (
+        {user || isAuthenticated ? <button type="button" className="icon-btn" onClick={() => setView("account")}>Account</button> : (
           <>
-            <button type="button" className="icon-btn" onClick={() => setView("login")}>Sign in</button>
-            <button type="button" className="icon-btn" onClick={() => setView("register")}>Register</button>
+            <button type="button" className="icon-btn" onClick={() => void login()} disabled={isLoading}>{isLoading ? "Loading..." : "Login"}</button>
+            <button type="button" className="icon-btn" onClick={() => void signup()} disabled={isLoading}>Signup</button>
           </>
         )}
         <button type="button" className="icon-btn" onClick={() => setView("cart")}>Bag <em>{cartCount}</em></button>
@@ -606,6 +622,22 @@ function App() {
   if (view === "login" || view === "register") {
     const isLogin = view === "login";
     return shell(<main className="page"><h1 className="page-title">{isLogin ? "Sign in" : "Register"}</h1>
+      {isLoading ? <p>Loading...</p> : isAuthenticated ? (
+        <>
+          <p>Logged in as {auth0User?.email}</p>
+          <h2 className="section-title">User Profile</h2>
+          <pre>{JSON.stringify(auth0User, null, 2)}</pre>
+          <button type="button" className="cta" onClick={() => void handleLogout()}>Logout</button>
+        </>
+      ) : (
+        <>
+          {auth0Error && <p className="auth-error">Error: {auth0Error.message}</p>}
+          <p className="auth-links">
+            <button type="button" className="cta" onClick={() => void login()}>Login</button>
+            <button type="button" className="cta ghost" onClick={() => void signup()}>Signup</button>
+          </p>
+        </>
+      )}
       <form className="contact-form" onSubmit={(e) => { e.preventDefault(); void handleAuth(isLogin ? "login" : "register"); }}>
         <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
         <label>Password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
@@ -621,8 +653,15 @@ function App() {
   }
 
   if (view === "account") {
-    return shell(<main className="page"><h1 className="page-title">{user ? user.email : "Account"}</h1>
-      {!user ? <button type="button" className="text-link" onClick={() => setView("login")}>Sign in</button> : (
+    return shell(<main className="page"><h1 className="page-title">{user?.email || auth0User?.email || "Account"}</h1>
+      {isAuthenticated && auth0User && (
+        <>
+          <p>Logged in as {auth0User.email}</p>
+          <h2 className="section-title">User Profile</h2>
+          <pre>{JSON.stringify(auth0User, null, 2)}</pre>
+        </>
+      )}
+      {!user && !isAuthenticated ? <button type="button" className="text-link" onClick={() => void login()}>Login</button> : (
         <>
           <div className="account-actions">
             {isAdmin && <button type="button" className="cta" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin orders</button>}
