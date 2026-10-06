@@ -18,8 +18,10 @@ import {
   spanIn,
   SWIM_ROWS,
 } from "../data/size-guide";
+import { useState } from "react";
+import { SizeFinder, TryRoom } from "./TryRoom";
 import type { Product } from "../data/catalog";
-import { TryRoom } from "./TryRoom";
+import type { FitResult } from "../data/size-guide";
 
 function Chart({
   columns,
@@ -53,6 +55,7 @@ function Chart({
 }
 
 export function SizesView({ onOpen }: { onOpen: (product: Product, size: string) => void }) {
+  const [fit, setFit] = useState<FitResult | null>(null);
   return (
     <>
       <section className="page-hero">
@@ -96,9 +99,10 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
               </li>
             ))}
           </ol>
+          <SizeFinder onFit={setFit} />
         </section>
 
-        <TryRoom onOpen={onOpen} />
+        <TryRoom fit={fit} onOpen={onOpen} />
 
         <section id="visuals">
           <p className="eyebrow">Visual charts</p>

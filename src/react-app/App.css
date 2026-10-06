@@ -124,6 +124,13 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .try-tape label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
 .try-tape input { background: #120910; border: 1px solid rgba(212, 176, 106, 0.35); color: var(--text-strong); padding: 0.45rem 0.5rem; }
 .try-note { margin: 0.6rem 0 0; }
+.finder-units { display: flex; gap: 0.35rem; margin: 0.8rem 0; }
+.finder-units button { border: 1px solid rgba(212, 176, 106, 0.35); background: transparent; color: var(--gold-soft); padding: 0.3rem 0.7rem; cursor: pointer; }
+.finder-units button.on { background: var(--gold); color: #1a0e08; border-color: var(--gold); }
+.finder-results { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.45rem; }
+.finder-results li { display: grid; grid-template-columns: 5.5rem 4.5rem 1fr; gap: 0.6rem; align-items: baseline; border-bottom: 1px solid rgba(212, 176, 106, 0.18); padding: 0.35rem 0; }
+.finder-results strong { color: var(--gold-soft); letter-spacing: 0.04em; }
+.finder-results em { color: var(--muted, #b7a898); font-style: normal; font-size: 0.85rem; }
 .try-products { display: flex; gap: 0.45rem; overflow-x: auto; margin-top: 0.9rem; padding-bottom: 0.35rem; }
 .try-products button { flex: 0 0 96px; border: 1px solid rgba(212, 176, 106, 0.28); background: #120910; color: var(--gold-soft); padding: 0; cursor: pointer; text-align: left; }
 .try-products button.on { border-color: var(--gold); }
