@@ -12,7 +12,7 @@ createRoot(root).render(
 		<Auth0Provider
 			domain="silkmoments.us.auth0.com"
 			clientId="NFWd6eudI4TbilRjYSsduUjIqGtrBYn5"
-			authorizationParams={{ redirect_uri: window.location.origin }}
+			authorizationParams={{ redirect_uri: `${window.location.origin}/account` }}
 		>
 			<App />
 		</Auth0Provider>
