@@ -366,24 +366,28 @@ function App() {
   }
 
   function orderTrack(o: StoreOrder) {
+    const code = o.tracking || o.order_no;
     const rank = o.status === "dispatched" ? 2 : o.status === "confirmed" ? 1 : 0;
     const steps = [
       { title: "Order placed", detail: "The atelier has your order. Cash on delivery." },
       { title: "Confirmed", detail: rank >= 1 ? "Your order is being prepared." : "Waiting for the atelier to confirm." },
-      { title: "Dispatched", detail: o.tracking ? `Tracking ${o.tracking}` : "A tracking number appears here once it ships." },
+      { title: "Dispatched", detail: o.tracking ? `On the way. Tracking ${o.tracking}` : "Ships with this same tracking reference." },
     ];
     return (
-      <ol className="track" aria-label={`Tracking for ${o.order_no}`}>
-        {steps.map((step, i) => (
-          <li key={step.title} className={i < rank ? "done" : i === rank ? "now" : ""}>
-            <span className="track-mark" aria-hidden="true" />
-            <div>
-              <strong>{step.title}</strong>
-              <p className="muted">{step.detail}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <div className="track-block">
+        <p className="track-code">Tracking <strong>{code}</strong></p>
+        <ol className="track" aria-label={`Tracking for ${o.order_no}`}>
+          {steps.map((step, i) => (
+            <li key={step.title} className={i < rank ? "done" : i === rank ? "now" : ""}>
+              <span className="track-mark" aria-hidden="true" />
+              <div>
+                <strong>{step.title}</strong>
+                <p className="muted">{step.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
     );
   }
 
@@ -706,8 +710,8 @@ function App() {
                 </div>
               </div>
               <ul className="receipt-lines">{receiptLines(o.items)}</ul>
+              {orderTrack(o)}
               {totalsBlock(o)}
-              {o.tracking && <p className="muted">Tracking {o.tracking}</p>}
             </li>
           ))}</ul>
         </>
