@@ -21,9 +21,13 @@ export function AtelierView({
           <p className="eyebrow">House</p>
           <h1 className="page-title">The atelier</h1>
           <p className="lede">Exotic silk, cut for the body. Emerald, champagne, ruby — still-life, then motion.</p>
-          <button type="button" className="cta" onClick={() => onShop()}>
+          <a href="/shop" className="cta" onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            onShop();
+          }}>
             Shop the house
-          </button>
+          </a>
         </div>
       </section>
 
@@ -93,9 +97,13 @@ export function AtelierView({
           ))}
         </div>
         <div className="account-actions" style={{ marginTop: "2rem" }}>
-          <button type="button" className="cta ghost" onClick={onSizes}>
+          <a href="/size-guide" className="cta ghost" onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            onSizes();
+          }}>
             Size charts
-          </button>
+          </a>
           <p className="muted">Tape snug, stand easy. Charts are the atelier starting point.</p>
         </div>
       </section>
@@ -130,9 +138,13 @@ export function AtelierView({
           <p className="lede">
             Card is a secure link after the atelier confirms. Cash on delivery stays available. {EXCHANGE}
           </p>
-          <button type="button" className="cta" onClick={() => onShop()}>
+          <a href="/shop" className="cta" onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            onShop();
+          }}>
             Shop the house
-          </button>
+          </a>
         </div>
       </section>
     </>

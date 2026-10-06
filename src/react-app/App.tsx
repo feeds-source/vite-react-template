@@ -584,7 +584,7 @@ function App() {
     <>
     <div className="announcement-bar" role="region" aria-label="Announcement">{ANNOUNCEMENT}</div>
     <header className="topbar">
-      <button type="button" className="brand" onClick={() => setView("home")}>FEMME<small>Silk Atelier</small></button>
+      <a href="/" className="brand" onClick={(e) => follow(e, () => setView("home"))}>FEMME<small>Silk Atelier</small></a>
       <nav className={`nav ${menuOpen ? "open" : ""}`}>
         <a href="/shop" className={view === "shop" && !room && category === "All" ? "active" : ""} onClick={(e) => follow(e, () => goShop())}>Shop</a>
         <a href={roomHref("Sleep")} className={room === "Sleep" ? "active" : ""} onClick={(e) => follow(e, () => goRoom("Sleep"))}>Sleep</a>
@@ -603,7 +603,7 @@ function App() {
             <button type="button" className="icon-btn" onClick={() => signIn("account", "signup")} disabled={isLoading}>Signup</button>
           </>
         )}
-        <button type="button" className="icon-btn" onClick={() => setView("cart")}>Bag <em>{cartCount}</em></button>
+        <a href="/cart" className="icon-btn" onClick={(e) => follow(e, () => setView("cart"))}>Bag <em>{cartCount}</em></a>
         <button type="button" className="burger" onClick={() => setMenuOpen((o) => !o)}>Menu</button>
       </div>
     </header>
@@ -637,7 +637,7 @@ function App() {
           <a href="/atelier" onClick={(e) => follow(e, () => setView("about"))}>The atelier</a>
           <a href="/size-guide" onClick={(e) => follow(e, () => setView("sizes"))}>Size guide</a>
           <a href="/contact" onClick={(e) => follow(e, () => setView("contact"))}>Contact</a>
-          <button type="button" onClick={() => setView("account")}>Orders</button>
+          <a href="/account" onClick={(e) => follow(e, () => setView("account"))}>Orders</a>
           {isAdmin && <button type="button" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin</button>}
           <p className="muted">info@silkmoments.com</p>
         </div>
@@ -883,15 +883,15 @@ function App() {
   const productGrid = (
       <div className="grid shop-grid">{gridProducts.map((p) => (
         <article key={p.id} className="card product-tile">
-          <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
+          <a className="card-hit" href={`/shop/${p.id}`} aria-label={p.name} onClick={(e) => follow(e, () => go("product", { product: p }))}>
             <div className="card-visual">
               <Motion image={p.image} video={p.video} alt={p.name} />
               {p.tag && <span className="tag on-dark">{p.tag}</span>}
             </div>
-          </button>
+          </a>
           <div className="card-body">
-            <p className="card-cat">{p.category}</p>
-            <h3>{p.name}</h3>
+            <p className="card-cat"><a href={catHref(p.category)} onClick={(e) => follow(e, () => goShop(p.category))}>{p.category}</a></p>
+            <h3><a href={`/shop/${p.id}`} onClick={(e) => follow(e, () => go("product", { product: p }))}>{p.name}</a></h3>
             <p className="card-price">{money(p.price)}</p>
           </div>
           <div className="card-actions">
@@ -922,8 +922,8 @@ function App() {
           <h1>{HERO.title}</h1>
           <p className="lede">{HERO.body}</p>
           <div className="hero-ctas">
-            <button type="button" className="cta" onClick={() => goShop()}>Shop the house</button>
-            <button type="button" className="cta ghost" onClick={() => go("sizes")}>Fit studio & sizing</button>
+            <a href="/shop" className="cta" onClick={(e) => follow(e, () => goShop())}>Shop the house</a>
+            <a href="/size-guide" className="cta ghost" onClick={(e) => follow(e, () => go("sizes"))}>Fit studio & sizing</a>
           </div>
         </div>
       </section>
@@ -971,7 +971,7 @@ function App() {
             <p className="lede">{STORY.body}</p>
             <div className="hero-ctas">
               <a href="/atelier" className="cta" onClick={(e) => follow(e, () => go("about"))}>Discover The Atelier</a>
-              <button type="button" className="cta ghost" onClick={() => go("sizes")}>Explore Fit Matrix</button>
+              <a href="/size-guide" className="cta ghost" onClick={(e) => follow(e, () => go("sizes"))}>Explore Fit Matrix</a>
             </div>
           </div>
         </div>
@@ -996,14 +996,14 @@ function App() {
             <p className="eyebrow">The Collection</p>
             <h2 className="page-title">House Highlights</h2>
           </div>
-          <button type="button" className="text-link" onClick={() => goShop()}>View all pieces</button>
+          <a href="/shop" className="text-link" onClick={(e) => follow(e, () => goShop())}>View all pieces</a>
         </div>
         <div className="grid highlights-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
-            <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
+            <a className="card-hit" href={`/shop/${p.id}`} aria-label={p.name} onClick={(e) => follow(e, () => go("product", { product: p }))}>
               <div className="card-visual"><Motion image={p.image} video={p.video} alt={p.name} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
-            </button>
-            <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
+            </a>
+            <div className="card-body"><p className="card-cat"><a href={catHref(p.category)} onClick={(e) => follow(e, () => goShop(p.category))}>{p.category}</a></p><h3><a href={`/shop/${p.id}`} onClick={(e) => follow(e, () => go("product", { product: p }))}>{p.name}</a></h3><p className="card-price">{money(p.price)}</p></div>
             <div className="card-actions">
               <label className="size-label">Size
                 <select className="size-select" value={sizeOf(p)} onChange={(e) => setPickSize((s) => ({ ...s, [p.id]: e.target.value }))}>
@@ -1017,7 +1017,7 @@ function App() {
       </main>
       <section className="campaign-home">
         {SPLIT.map((p) => (
-          <button key={p.title} type="button" className="campaign-panel" onClick={() => goRoom(p.room)}>
+          <a key={p.title} href={roomHref(p.room)} className="campaign-panel" onClick={(e) => follow(e, () => goRoom(p.room))}>
             <img className="ken" src={p.image} alt={p.title} onError={coverFallback} />
             <video className="motion-video" autoPlay muted loop playsInline poster={p.image}>
               <source src={p.image.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
@@ -1025,7 +1025,7 @@ function App() {
             <div className="hero-veil" />
             <span className="eyebrow">{p.kicker}</span>
             <strong>{p.title}</strong>
-          </button>
+          </a>
         ))}
       </section>
       {footer}

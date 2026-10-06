@@ -115,9 +115,13 @@ export function SearchModal({
                     <p className="eyebrow">Aisles & collections</p>
                     <div className="search-pills">
                       {hits.aisles.map((a) => (
-                        <button key={a.cat} type="button" className="pill" onClick={() => onAisle(a.cat)}>
+                        <a key={a.cat} href={`/shop?cat=${encodeURIComponent(a.cat)}`} className="pill" onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                          e.preventDefault();
+                          onAisle(a.cat);
+                        }}>
                           {a.cat}
-                        </button>
+                        </a>
                       ))}
                     </div>
                   </div>
@@ -127,9 +131,13 @@ export function SearchModal({
                     <p className="eyebrow">House</p>
                     <div className="search-pills">
                       {hits.pages.map((p) => (
-                        <button key={p.href} type="button" className="pill" onClick={() => onPage(p.href)}>
+                        <a key={p.href} href={p.href} className="pill" onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                          e.preventDefault();
+                          onPage(p.href);
+                        }}>
                           {p.title}
-                        </button>
+                        </a>
                       ))}
                     </div>
                   </div>
@@ -139,7 +147,11 @@ export function SearchModal({
                     <p className="eyebrow">Pieces in the atelier</p>
                     <div className="predictive-grid">
                       {hits.products.map((p) => (
-                        <button key={p.id} type="button" className="predictive-item" onClick={() => onProduct(p)}>
+                        <a key={p.id} href={`/shop/${p.id}`} className="predictive-item" onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                          e.preventDefault();
+                          onProduct(p);
+                        }}>
                           <span className="predictive-still">
                             <img className="ken" src={p.image} alt="" />
                             {p.video ? (
@@ -152,7 +164,7 @@ export function SearchModal({
                             <strong>{p.name}</strong>
                             <em>${p.price.toFixed(2)}</em>
                           </span>
-                        </button>
+                        </a>
                       ))}
                     </div>
                     {typed ? (

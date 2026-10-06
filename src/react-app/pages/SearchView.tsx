@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { type FormEvent, type MouseEvent, type ReactNode, useEffect, useState } from "react";
 import { searchHouse, type AisleHit, type PageHit } from "../data/search";
 
 export function SearchView({
@@ -26,6 +26,12 @@ export function SearchView({
   function submit(e: FormEvent) {
     e.preventDefault();
     onQuery(draft.trim());
+  }
+
+  function follow(e: MouseEvent<HTMLAnchorElement>, go: () => void) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    go();
   }
 
   return (
@@ -72,9 +78,9 @@ export function SearchView({
             <p className="eyebrow">Aisles & collections</p>
             <div className="search-pills">
               {hits.aisles.map((a) => (
-                <button key={a.cat} type="button" className="pill" onClick={() => onAisle(a.cat)}>
+                <a key={a.cat} href={`/shop?cat=${encodeURIComponent(a.cat)}`} className="pill" onClick={(e) => follow(e, () => onAisle(a.cat))}>
                   {a.cat}
-                </button>
+                </a>
               ))}
             </div>
           </div>
@@ -85,9 +91,9 @@ export function SearchView({
             <p className="eyebrow">House</p>
             <div className="search-pills">
               {hits.pages.map((p) => (
-                <button key={p.href} type="button" className="pill" onClick={() => onPage(p.href)}>
+                <a key={p.href} href={p.href} className="pill" onClick={(e) => follow(e, () => onPage(p.href))}>
                   {p.title}
-                </button>
+                </a>
               ))}
             </div>
           </div>

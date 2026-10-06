@@ -105,9 +105,9 @@ export function ShopView({
             {count} {count === 1 ? "piece" : "pieces"}
             {category !== "All" ? ` in ${category}` : room ? ` in ${room}` : " in the atelier"}
           </p>
-          <button type="button" className="text-link" onClick={onSizes}>
+          <a href="/size-guide" className="text-link" onClick={(e) => follow(e, onSizes)}>
             Size charts
-          </button>
+          </a>
         </div>
         {count === 0 ? <p className="muted">No pieces in this aisle yet.</p> : productGrid}
       </main>
