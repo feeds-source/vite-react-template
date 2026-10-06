@@ -795,7 +795,7 @@ function App() {
         <article key={p.id} className="card product-tile">
           <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
             <div className="card-visual">
-              <img className="ken" src={p.image} alt={p.name} onError={coverFallback} />
+              <img src={p.image} alt={p.name} onError={coverFallback} />
               {p.tag && <span className="tag on-dark">{p.tag}</span>}
             </div>
           </button>
@@ -900,7 +900,7 @@ function App() {
         <div className="grid highlights-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
             <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
-              <div className="card-visual"><img className="ken" src={p.image} alt={p.name} onError={coverFallback} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
+              <div className="card-visual"><img src={p.image} alt={p.name} onError={coverFallback} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
             </button>
             <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
             <div className="card-actions">

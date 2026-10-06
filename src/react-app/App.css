@@ -72,7 +72,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .wish-btn { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 2; border: 0; background: rgba(8,4,12,0.65); color: #f0dfb4; width: 32px; height: 32px; cursor: pointer; }
 .card-hit { display: block; width: 100%; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
 .card-visual { position: relative; height: 230px; background: #160b16; overflow: hidden; }
-.card-visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-visual img { width: 100%; height: 100%; object-fit: contain; display: block; background: #120910; }
 .card-body { padding: 0.95rem 1rem 1.15rem; }
 .card-cat { margin: 0 0 0.2rem; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
 .card-body h3 { margin: 0 0 0.35rem; color: var(--text-strong); font-size: 1.05rem; }
@@ -90,7 +90,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .copyright { background: linear-gradient(90deg, #7a1248, #e11d8a, #b8893a); color: #fff; text-align: center; padding: 0.75rem 1rem; margin: 0 -1.5rem; font-size: 0.82rem; }
 .back, .text-link { border: 0; background: none; color: var(--gold); cursor: pointer; padding: 0; font-weight: 600; }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-.pdp-photo { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; display: block; margin-bottom: 1.25rem; }
+.pdp-photo { width: 100%; height: auto; object-fit: contain; background: #120910; display: block; margin-bottom: 1.25rem; }
 .pay-choice { border: 0; margin: 0.4rem 0 0; padding: 0; display: flex; gap: 1.2rem; }
 .pay-choice label { display: flex; gap: 0.4rem; align-items: center; }
 .detail-hero { position: relative; min-height: 420px; border: 1px solid rgba(212, 176, 106, 0.25); background-size: cover; background-position: center; }

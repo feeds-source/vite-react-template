@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { chartFor, type Product } from "../data/catalog";
 import { ALPHA_ROWS, CORSET_ROWS, GOWN_ROWS, NIGHTY_ROWS, PANTIES_ROWS, SWIM_ROWS } from "../data/size-guide";
 
@@ -73,13 +73,9 @@ export function FitView({
   sizes: readonly string[];
   onSize: (size: string) => void;
 }) {
-  const [angle, setAngle] = useState(18);
-  const [spin, setSpin] = useState(true);
   const [shapeId, setShapeId] = useState<ShapeId>("balanced");
-  const drag = useRef<{ x: number; angle: number } | null>(null);
   const shape = SHAPES.find((s) => s.id === shapeId) ?? SHAPES[1];
   const garment = garmentOf(product, size);
-  const ease = garment.hip / shape.hip;
   const points = [
     ["Bust", easeWord(garment.bust, shape.bust)],
     ["Waist", easeWord(garment.waist, shape.waist)],
@@ -88,39 +84,6 @@ export function FitView({
 
   return (
     <div className="fit-view">
-      <div
-        className="fit-stage"
-        onPointerDown={(e) => {
-          setSpin(false);
-          drag.current = { x: e.clientX, angle };
-          e.currentTarget.setPointerCapture(e.pointerId);
-        }}
-        onPointerMove={(e) => {
-          if (!drag.current) return;
-          setAngle(drag.current.angle + (e.clientX - drag.current.x) * 0.6);
-        }}
-        onPointerUp={() => { drag.current = null; }}
-      >
-        <div className="fit-scene">
-          <div
-            className={`fit-turn${spin && !drag.current ? " spinning" : ""}`}
-            style={{
-              transform: `rotateY(${angle}deg)`,
-              ["--form-bust" as string]: `${shape.bust / 90}`,
-              ["--form-waist" as string]: `${shape.waist / 72}`,
-              ["--form-hip" as string]: `${shape.hip / 98}`,
-              ["--garment" as string]: `${Math.min(1.16, Math.max(0.84, ease))}`,
-            }}
-          >
-            <div className="fit-face front" style={{ backgroundImage: `url(${product.image})` }} />
-            <div className="fit-face back" style={{ backgroundImage: `url(${product.image})` }} />
-            <div className="fit-face side left" />
-            <div className="fit-face side right" />
-          </div>
-        </div>
-        <p className="fit-hint">Drag to turn · 360</p>
-      </div>
-
       <div className="fit-controls">
         <div className="fit-row">
           <span>Size</span>
@@ -138,7 +101,6 @@ export function FitView({
             ))}
           </div>
         </div>
-        <button type="button" className="text-link" onClick={() => setSpin((v) => !v)}>{spin ? "Pause turn" : "Turn"}</button>
       </div>
 
       <ul className="fit-read">
