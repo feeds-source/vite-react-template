@@ -135,20 +135,7 @@ export const COUNTRIES = [
   "Other",
 ] as const;
 
-const NO_FILM = new Set([
-  "atelier-slip",
-  "champagne-sleep-set",
-  "cloud-bralette",
-  "invisible-brief",
-  "noir-robe",
-  "silk-leakproof",
-  "studio-bra",
-]);
-
-const piece = (id: string) =>
-  NO_FILM.has(id)
-    ? { image: `/products/${id}.jpg` }
-    : { image: `/products/${id}.jpg`, video: `/products/${id}.mp4` };
+const piece = (id: string) => ({ image: `/products/${id}.jpg`, video: `/products/${id}.mp4` });
 
 const CLOTH: Record<Category, string> = {
   Bras: "Microfiber cups. Not a silk shell.",
