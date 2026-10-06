@@ -96,6 +96,12 @@ jobs:
           echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
           export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT"
           node scripts/ensure-d1.mjs
+      - name: Install Web Analytics beacon
+        if: steps.creds.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "1e611220afd75688b509ba299e98bde7"
+        run: node scripts/ensure-beacon.mjs
       - run: npm run build
       - name: Apply D1 migrations
         if: steps.creds.outputs.ready == 'true'
