@@ -4,7 +4,7 @@ export const SITE_NAME = "Femme — Silk Moments";
 export const SITE_URL = "https://www.silkmoments.com";
 
 export const HOUSE_KEYWORDS =
-  "silk lingerie, jewel tone lingerie, silk babydoll, lace teddy, silk nightgown, bridal lingerie, silk robe, wireless bra, t-shirt bra, lace bralette, balconette set, silk slip, satin gown, silk bustier, lace waspie, seamed stockings, shapewear, silk kaftan, cashmere wrap, silk sleep mask, cash on delivery lingerie, Femme Silk Moments, exotic silk";
+  "silk lingerie, jewel tone lingerie, wireless bralette, seamless underwear, leakproof brief, sleep set, half slip, silk robe, silk babydoll, lace teddy, silk nightgown, bridal lingerie, t-shirt bra, balconette set, silk slip, satin gown, silk bustier, lace waspie, seamed stockings, shapewear, silk kaftan, cashmere wrap, silk sleep mask, cash on delivery lingerie, Femme Silk Moments, exotic silk";
 
 export const HOUSE_DESCRIPTION =
   "Femme by Silk Moments — jewel-tone silk lingerie, lace babydolls, teddies, bridal robes, and lounge. Cash on delivery worldwide with discreet packaging.";
@@ -49,6 +49,13 @@ export const PRODUCT_KEYWORDS: Record<string, string> = {
   "plum-wrap": "cashmere wrap, merino cashmere shawl, knitted wrap",
   "silk-eye-mask": "silk sleep mask, embroidered eye mask, mulberry silk sleep mask",
   "gold-body-chain": "gold body chain, body jewelry, gold plated body chain",
+  "cloud-bralette": "wireless bralette, comfort bralette, unwired lace bra",
+  "invisible-brief": "seamless brief, no show underwear, invisible panty",
+  "champagne-sleep-set": "satin pajama set, sleep set cami shorts, matching lounge set",
+  "atelier-slip": "half slip, strapless slip, slip dress underdress",
+  "silk-leakproof": "leakproof underwear, period brief, stay dry panty",
+  "studio-bra": "wireless sports bra, studio bra, light support active bra",
+  "noir-robe": "silk robe, lounge robe, dressing gown",
 };
 
 export function keywordsFor(id: string) {

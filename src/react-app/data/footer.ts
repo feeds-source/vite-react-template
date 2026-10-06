@@ -3,11 +3,11 @@ import type { Category } from "./catalog";
 export const FOOTER_AISLES: { title: string; cats: Category[] }[] = [
   {
     title: "Sleep Room",
-    cats: ["Babydoll", "Short Nighty", "Long Nighty", "Gowns", "Teddies"],
+    cats: ["Babydoll", "Short Nighty", "Long Nighty", "Sleep Sets", "Slips", "Gowns", "Teddies", "Robes"],
   },
   {
     title: "Body Room",
-    cats: ["Bras", "Bra Sets", "Panties", "Camisole", "Corsetry", "Hosiery", "Body Stockings", "Shapewear"],
+    cats: ["Bras", "Bralettes", "Bra Sets", "Panties", "Seamless", "Leakproof", "Active", "Camisole", "Corsetry", "Hosiery", "Body Stockings", "Shapewear"],
   },
   {
     title: "Lounge Room",

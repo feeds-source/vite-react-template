@@ -49,7 +49,9 @@ export const MARQUEE = [
 ];
 
 export const AISLES: { cat: Category; title: string; image: string; room: Room }[] = [
-  { cat: "Babydoll", title: "Short lace night", image: "/products/ruby-babydoll.jpg", room: "Sleep" },
+  { cat: "Bralettes", title: "Wireless all day", image: "/products/everyday-soft-bra.jpg", room: "Lingerie" },
+  { cat: "Seamless", title: "Nothing to show", image: "/products/seamless-thong.jpg", room: "Lingerie" },
+  { cat: "Sleep Sets", title: "Matching sleep", image: "/products/satin-night-set.jpg", room: "Sleep" },
   { cat: "Bra Sets", title: "Balconette pairs", image: "/products/lace-balconette-set.jpg", room: "Lingerie" },
   { cat: "Gowns", title: "Satin after dusk", image: "/products/satin-gown.jpg", room: "Sleep" },
   { cat: "Swim", title: "Jewel bikini", image: "/products/silk-bikini.jpg", room: "Lounge" },

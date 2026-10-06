@@ -37,6 +37,13 @@ export const CATALOG: CatalogItem[] = [
 	{ id: "plum-wrap", name: "Plum Cashmere Wrap", category: "Thermal", price: 94 },
 	{ id: "silk-eye-mask", name: "Champagne Silk Mask", category: "Accessories", price: 24 },
 	{ id: "gold-body-chain", name: "Gold Body Chain", category: "Accessories", price: 54 },
+	{ id: "cloud-bralette", name: "Cloud Wireless Bralette", category: "Bralettes", price: 38 },
+	{ id: "invisible-brief", name: "Invisible Seamless Brief", category: "Seamless", price: 18 },
+	{ id: "champagne-sleep-set", name: "Champagne Sleep Set", category: "Sleep Sets", price: 78 },
+	{ id: "atelier-slip", name: "Atelier Half Slip", category: "Slips", price: 58 },
+	{ id: "silk-leakproof", name: "Silk-Feel Leakproof Brief", category: "Leakproof", price: 24 },
+	{ id: "studio-bra", name: "Studio Soft Bra", category: "Active", price: 44 },
+	{ id: "noir-robe", name: "Noir Atelier Robe", category: "Robes", price: 84 },
 ];
 
 export const CATALOG_BY_ID = Object.fromEntries(CATALOG.map((p) => [p.id, p]));

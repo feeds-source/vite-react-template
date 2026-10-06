@@ -20,6 +20,44 @@ export const CAT_HERO: Record<"All" | Category, ShopHero> = {
     kicker: "Body",
     body: "Soft cups, T-shirt, first-fit. Band and cup as worn in atelier fittings.",
   },
+  Bralettes: {
+    image: "/products/everyday-soft-bra.jpg",
+    video: "/products/everyday-soft-bra.mp4",
+    kicker: "Body",
+    body: "Wireless bralettes. The comfort bra US wardrobes wear all day.",
+  },
+  Seamless: {
+    image: "/products/seamless-thong.jpg",
+    kicker: "Body",
+    body: "Bonded, no-show briefs and thongs. Nothing to read under clothes.",
+  },
+  "Sleep Sets": {
+    image: "/products/satin-night-set.jpg",
+    video: "/products/satin-night-set.mp4",
+    kicker: "Night",
+    body: "Matching cami and short. Sleep sets, the fastest lounge aisle.",
+  },
+  Slips: {
+    image: "/products/sculpt-midi.jpg",
+    kicker: "Night",
+    body: "Half slips for dresses, and slip dresses in their own right.",
+  },
+  Leakproof: {
+    image: "/products/daily-hipster.jpg",
+    kicker: "Body",
+    body: "Stay-dry gusset briefs for cycle days. Same fit as the house brief.",
+  },
+  Active: {
+    image: "/products/ultimate-tshirt-bra.jpg",
+    video: "/products/ultimate-tshirt-bra.mp4",
+    kicker: "Body",
+    body: "Wireless studio bras. Light support from the house to the street.",
+  },
+  Robes: {
+    image: "/products/cloud-robe.jpg",
+    kicker: "After dusk",
+    body: "Self-tie robes. Lounge that leaves the house.",
+  },
   "Bra Sets": {
     image: "/products/lace-balconette-set.jpg",
     video: "/products/lace-balconette-set.mp4",
@@ -133,7 +171,7 @@ export const ATELIER_ROOMS = [
     kicker: FOOTER_AISLES[1]!.title,
     image: "/banners/lingerie.jpg",
     video: "/banners/lingerie.mp4",
-    body: "Bras and sets, panties, camisole, corsetry, hose, body stockings, shapewear. Cut to the tape.",
+    body: "Bras, bralettes, seamless and leakproof briefs, active, camisole, corsetry, hose, shapewear. Cut to the tape.",
     cats: FOOTER_AISLES[1]!.cats,
   },
   {

@@ -44,6 +44,13 @@ const PAGES: Array<PageHit & { terms: string }> = [
 
 const EXTRA: Record<string, string> = {
   bras: "bra bralette cup balconette t-shirt",
+  bralettes: "bralette wireless unwired comfort bra",
+  seamless: "seamless invisible no show bonded laser",
+  "sleep sets": "pajama set sleep set cami short lounge set",
+  slips: "slip dress half slip underdress",
+  leakproof: "period leakproof brief cycle underwear",
+  active: "sports bra studio wireless active athleisure",
+  robes: "robe dressing gown lounge robe",
   "bra sets": "bra set balconette pair",
   panties: "panty brief thong hipster brazilian",
   camisole: "cami lace",

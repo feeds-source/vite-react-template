@@ -1,4 +1,11 @@
 export type Category =
+  | "Bralettes"
+  | "Seamless"
+  | "Sleep Sets"
+  | "Slips"
+  | "Leakproof"
+  | "Active"
+  | "Robes"
   | "Bras"
   | "Bra Sets"
   | "Panties"
@@ -51,6 +58,13 @@ export const SIZE_CHARTS: Record<SizeChart, readonly string[]> = {
 
 export const CHART_FOR: Record<Category, SizeChart> = {
   Bras: "bra",
+  Bralettes: "alpha",
+  Seamless: "alpha",
+  "Sleep Sets": "nighty",
+  Slips: "nighty",
+  Leakproof: "alpha",
+  Active: "alpha",
+  Robes: "nighty",
   "Bra Sets": "bra",
   Panties: "alpha",
   Camisole: "alpha",
@@ -86,14 +100,21 @@ export type Product = {
 export const CATEGORIES = [
   "All",
   "Bras",
+  "Bralettes",
   "Bra Sets",
   "Panties",
+  "Seamless",
+  "Leakproof",
+  "Active",
   "Camisole",
   "Babydoll",
   "Short Nighty",
   "Long Nighty",
+  "Sleep Sets",
+  "Slips",
   "Gowns",
   "Teddies",
+  "Robes",
   "Bridal",
   "Corsetry",
   "Hosiery",
@@ -434,6 +455,66 @@ export const PRODUCTS: Product[] = [
     price: 54,
     description: "A delicate chain for velvet and ruby silk.",
     ...piece("gold-body-chain"),
+  },
+  {
+    id: "cloud-bralette",
+    name: "Cloud Wireless Bralette",
+    category: "Bralettes",
+    price: 38,
+    description: "Unwired lace bralette with a soft band. The US everyday bra: comfort first, no underwire.",
+    tag: "New",
+    image: "/products/everyday-soft-bra.jpg",
+    video: "/products/everyday-soft-bra.mp4",
+  },
+  {
+    id: "invisible-brief",
+    name: "Invisible Seamless Brief",
+    category: "Seamless",
+    price: 18,
+    description: "Bonded edges, no show under silk or tailoring. Laser-cut, second-skin.",
+    image: "/products/seamless-thong.jpg",
+  },
+  {
+    id: "champagne-sleep-set",
+    name: "Champagne Sleep Set",
+    category: "Sleep Sets",
+    price: 78,
+    description: "Matching cami and short. The set US lounging actually lives in.",
+    image: "/products/satin-night-set.jpg",
+    video: "/products/satin-night-set.mp4",
+  },
+  {
+    id: "atelier-slip",
+    name: "Atelier Half Slip",
+    category: "Slips",
+    price: 58,
+    description: "Strapless smoothing slip for dresses, and for wearing as a slip dress.",
+    image: "/products/sculpt-midi.jpg",
+  },
+  {
+    id: "silk-leakproof",
+    name: "Silk-Feel Leakproof Brief",
+    category: "Leakproof",
+    price: 24,
+    description: "Everyday brief with a stay-dry gusset for cycle days. Worn like any house brief.",
+    image: "/products/daily-hipster.jpg",
+  },
+  {
+    id: "studio-bra",
+    name: "Studio Soft Bra",
+    category: "Active",
+    price: 44,
+    description: "Wireless support for the studio and the street. Light hold, silk hand.",
+    image: "/products/ultimate-tshirt-bra.jpg",
+    video: "/products/ultimate-tshirt-bra.mp4",
+  },
+  {
+    id: "noir-robe",
+    name: "Noir Atelier Robe",
+    category: "Robes",
+    price: 84,
+    description: "Mid-weight robe with a self tie. The dressing-gown aisle, cut to lounge out of the house.",
+    image: "/products/cloud-robe.jpg",
   },
 ];
 
