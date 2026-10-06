@@ -67,9 +67,13 @@ export function AtelierView({
               <p className="muted">{room.body}</p>
               <div className="nav-cats">
                 {room.cats.map((c) => (
-                  <button key={c} type="button" className="pill" onClick={() => onShop(c)}>
+                  <a key={c} href={`/shop?cat=${encodeURIComponent(c)}`} className="pill" onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    onShop(c);
+                  }}>
                     {c}
-                  </button>
+                  </a>
                 ))}
               </div>
             </article>

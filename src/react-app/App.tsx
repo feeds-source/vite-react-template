@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type MouseEvent as ReactMouseEvent, type ReactNode, type SyntheticEvent } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import "./App.css";
 import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT, EXCHANGE } from "./data/banners";
@@ -140,6 +140,18 @@ function pathFor(view: View, opts?: { cat?: string; product?: Product | null; q?
   if (view === "account") return "/account";
   if (view === "admin") return "/admin";
   return "/";
+}
+
+function catHref(cat: string) {
+  return cat && cat !== "All" ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop";
+}
+function roomHref(room: string) {
+  return `/shop?room=${encodeURIComponent(room)}`;
+}
+function follow(e: ReactMouseEvent<HTMLAnchorElement>, go: () => void) {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+  e.preventDefault();
+  go();
 }
 
 function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; product: Product | null; q: string; room: Room | "" } {
@@ -574,13 +586,13 @@ function App() {
     <header className="topbar">
       <button type="button" className="brand" onClick={() => setView("home")}>FEMME<small>Silk Atelier</small></button>
       <nav className={`nav ${menuOpen ? "open" : ""}`}>
-        <button type="button" className={view === "shop" && !room && category === "All" ? "active" : ""} onClick={() => goShop()}>Shop</button>
-        <button type="button" className={room === "Sleep" ? "active" : ""} onClick={() => goRoom("Sleep")}>Sleep</button>
-        <button type="button" className={room === "Lingerie" ? "active" : ""} onClick={() => goRoom("Lingerie")}>Lingerie</button>
-        <button type="button" className={room === "Lounge" ? "active" : ""} onClick={() => goRoom("Lounge")}>Lounge</button>
-        <button type="button" className={view === "about" ? "active" : ""} onClick={() => go("about")}>The Atelier</button>
-        <button type="button" className={view === "sizes" ? "active" : ""} onClick={() => { setView("sizes"); setMenuOpen(false); }}>Size Guide</button>
-        <button type="button" className={view === "contact" ? "active" : ""} onClick={() => setView("contact")}>Contact</button>
+        <a href="/shop" className={view === "shop" && !room && category === "All" ? "active" : ""} onClick={(e) => follow(e, () => goShop())}>Shop</a>
+        <a href={roomHref("Sleep")} className={room === "Sleep" ? "active" : ""} onClick={(e) => follow(e, () => goRoom("Sleep"))}>Sleep</a>
+        <a href={roomHref("Lingerie")} className={room === "Lingerie" ? "active" : ""} onClick={(e) => follow(e, () => goRoom("Lingerie"))}>Lingerie</a>
+        <a href={roomHref("Lounge")} className={room === "Lounge" ? "active" : ""} onClick={(e) => follow(e, () => goRoom("Lounge"))}>Lounge</a>
+        <a href="/atelier" className={view === "about" ? "active" : ""} onClick={(e) => follow(e, () => go("about"))}>The Atelier</a>
+        <a href="/size-guide" className={view === "sizes" ? "active" : ""} onClick={(e) => follow(e, () => { setView("sizes"); setMenuOpen(false); })}>Size Guide</a>
+        <a href="/contact" className={view === "contact" ? "active" : ""} onClick={(e) => follow(e, () => setView("contact"))}>Contact</a>
       </nav>
       <div className="topbar-right">
         <button type="button" className="icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search the atelier">Search</button>
@@ -617,14 +629,14 @@ function App() {
         {FOOTER_AISLES.map((g) => (
           <div key={g.title}>
             <h3>{g.title}</h3>
-            {g.cats.map((c) => <button key={c} type="button" onClick={() => goShop(c)}>{c}</button>)}
+            {g.cats.map((c) => <a key={c} href={catHref(c)} onClick={(e) => follow(e, () => goShop(c))}>{c}</a>)}
           </div>
         ))}
         <div>
           <h3>House</h3>
-          <button type="button" onClick={() => setView("about")}>The atelier</button>
-          <button type="button" onClick={() => setView("sizes")}>Size guide</button>
-          <button type="button" onClick={() => setView("contact")}>Contact</button>
+          <a href="/atelier" onClick={(e) => follow(e, () => setView("about"))}>The atelier</a>
+          <a href="/size-guide" onClick={(e) => follow(e, () => setView("sizes"))}>Size guide</a>
+          <a href="/contact" onClick={(e) => follow(e, () => setView("contact"))}>Contact</a>
           <button type="button" onClick={() => setView("account")}>Orders</button>
           {isAdmin && <button type="button" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin</button>}
           <p className="muted">info@silkmoments.com</p>
@@ -935,13 +947,13 @@ function App() {
       ))}</div></div>
       <section className="campaign-home">
         {CAMPAIGNS.map((c) => (
-          <button key={c.id} type="button" className="campaign-panel" onClick={() => goRoom(c.room)}>
+          <a key={c.id} href={roomHref(c.room)} className="campaign-panel" onClick={(e) => follow(e, () => goRoom(c.room))}>
             <img className="ken" src={c.poster} alt="" />
             {c.video && <video className="motion-video" autoPlay muted loop playsInline poster={c.poster}><source src={c.video} type="video/mp4" /></video>}
             <div className="hero-veil" />
             <span className="eyebrow">{c.kicker}</span>
             <strong>{c.title}</strong>
-          </button>
+          </a>
         ))}
       </section>
       <section className="page">
@@ -958,7 +970,7 @@ function App() {
             <h2 className="page-title">{STORY.heading}</h2>
             <p className="lede">{STORY.body}</p>
             <div className="hero-ctas">
-              <button type="button" className="cta" onClick={() => go("about")}>Discover The Atelier</button>
+              <a href="/atelier" className="cta" onClick={(e) => follow(e, () => go("about"))}>Discover The Atelier</a>
               <button type="button" className="cta ghost" onClick={() => go("sizes")}>Explore Fit Matrix</button>
             </div>
           </div>
@@ -969,14 +981,14 @@ function App() {
         <h2 className="page-title">Walk the house</h2>
         <div className="aisle-grid">
           {AISLES.map((a) => (
-            <button key={a.cat} type="button" className="aisle" onClick={() => goShop(a.cat)}>
+            <a key={a.cat} href={catHref(a.cat)} className="aisle" onClick={(e) => follow(e, () => goShop(a.cat))}>
               <img className="ken" src={a.image} alt="" />
               <video className="motion-video" autoPlay muted loop playsInline poster={a.image}>
                 <source src={a.image.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
               </video>
               <div className="hero-veil" />
               <span><em>{a.cat}</em><b>{a.title}</b></span>
-            </button>
+            </a>
           ))}
         </div>
         <div className="catalog-head">

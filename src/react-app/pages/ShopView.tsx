@@ -1,8 +1,20 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { AISLES, CAMPAIGNS } from "../data/banners";
 import { CATEGORIES } from "../data/catalog";
 import { ROOMS, type Room } from "../data/footer";
 import { CAT_HERO } from "../data/house";
+
+function catHref(cat: string) {
+  return cat === "All" ? "/shop" : `/shop?cat=${encodeURIComponent(cat)}`;
+}
+function roomHref(room: string) {
+  return `/shop?room=${encodeURIComponent(room)}`;
+}
+function follow(e: MouseEvent<HTMLAnchorElement>, go: () => void) {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+  e.preventDefault();
+  go();
+}
 
 export function ShopView({
   category,
@@ -50,7 +62,7 @@ export function ShopView({
           <h2 className="page-title">Walk the house</h2>
           <div className="aisle-grid">
             {AISLES.map((a) => (
-              <button key={a.cat} type="button" className="aisle" onClick={() => onCat(a.cat)}>
+              <a key={a.cat} href={catHref(a.cat)} className="aisle" onClick={(e) => follow(e, () => onCat(a.cat))}>
                 <img className="ken" src={a.image} alt="" />
                 <video className="motion-video" autoPlay muted loop playsInline poster={a.image}>
                   <source src={a.image.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
@@ -60,7 +72,7 @@ export function ShopView({
                   <em>{a.cat}</em>
                   <b>{a.title}</b>
                 </span>
-              </button>
+              </a>
             ))}
           </div>
         </section>
@@ -69,9 +81,9 @@ export function ShopView({
       <nav className="guide-nav">
         <div className="guide-nav-inner">
           {(Object.keys(ROOMS) as Room[]).map((r) => (
-            <button key={r} type="button" className={activeRoom === r && category === "All" ? "pill is-on" : "pill"} onClick={() => onRoom(r)}>
+            <a key={r} href={roomHref(r)} className={activeRoom === r && category === "All" ? "pill is-on" : "pill"} onClick={(e) => follow(e, () => onRoom(r))}>
               {r === "Lingerie" ? "Lingerie" : r}
-            </button>
+            </a>
           ))}
         </div>
       </nav>
@@ -79,9 +91,9 @@ export function ShopView({
         <nav className="guide-nav">
           <div className="guide-nav-inner">
             {roomCats.map((c) => (
-              <button key={c} type="button" className={category === c ? "pill is-on" : "pill"} onClick={() => onCat(c)}>
+              <a key={c} href={catHref(c)} className={category === c ? "pill is-on" : "pill"} onClick={(e) => follow(e, () => onCat(c))}>
                 {c}
-              </button>
+              </a>
             ))}
           </div>
         </nav>
