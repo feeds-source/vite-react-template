@@ -78,7 +78,10 @@ ${urls
 }
 
 export function buildRobotsTxt() {
-  return `User-agent: *
+  const agents = ["*", "GPTBot", "OAI-SearchBot", "ChatGPT-User", "PerplexityBot", "ClaudeBot", "Google-Extended", "Applebot-Extended", "Bingbot"];
+  const rules = agents
+    .map(
+      (agent) => `User-agent: ${agent}
 Allow: /
 Disallow: /cart
 Disallow: /checkout
@@ -86,8 +89,12 @@ Disallow: /login
 Disallow: /register
 Disallow: /account
 Disallow: /admin
-Disallow: /api/
+Disallow: /api/`,
+    )
+    .join("\n\n");
+  return `${rules}
 
 Sitemap: ${SITE}/sitemap.xml
+# House brief for answer engines: ${SITE}/llms.txt
 `;
 }

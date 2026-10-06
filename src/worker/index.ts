@@ -22,6 +22,7 @@ import {
 } from "./orders";
 import { listAdminEvents, recordEvent } from "./events";
 import { buildRobotsTxt, buildSitemapXml } from "./sitemap";
+import { buildLlmsTxt, injectDocumentSeo, seoForRequest } from "./html-seo";
 
 type Note = {
 	id: number;
@@ -39,6 +40,13 @@ app.use("/api/*", cors());
 app.get("/sitemap.xml", (c) =>
 	c.body(buildSitemapXml(), 200, {
 		"content-type": "application/xml; charset=utf-8",
+		"cache-control": "public, max-age=3600",
+	}),
+);
+
+app.get("/llms.txt", (c) =>
+	c.body(buildLlmsTxt(), 200, {
+		"content-type": "text/plain; charset=utf-8",
 		"cache-control": "public, max-age=3600",
 	}),
 );
@@ -299,4 +307,25 @@ app.delete("/api/notes/:id", requireAuth, async (c) => {
 	return c.json({ ok: true, id: result.id });
 });
 
-export default app;
+export default {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+		const url = new URL(request.url);
+		const workerPath =
+			url.pathname.startsWith("/api/") ||
+			url.pathname === "/api" ||
+			url.pathname === "/sitemap.xml" ||
+			url.pathname === "/robots.txt" ||
+			url.pathname === "/llms.txt";
+		if (workerPath || !env.ASSETS) return app.fetch(request, env, ctx);
+		const asset = await env.ASSETS.fetch(request);
+		const type = asset.headers.get("content-type") || "";
+		if (!type.includes("text/html")) return asset;
+		const html = await asset.text();
+		const headers = new Headers(asset.headers);
+		headers.delete("content-length");
+		return new Response(injectDocumentSeo(html, seoForRequest(url)), {
+			status: asset.status,
+			headers,
+		});
+	},
+};

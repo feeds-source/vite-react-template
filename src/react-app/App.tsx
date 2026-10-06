@@ -12,7 +12,7 @@ import { SearchView } from "./pages/SearchView";
 import { SearchModal } from "./pages/SearchModal";
 import { searchHouse } from "./data/search";
 import type { PageHit } from "./data/search";
-import { applyDocumentSeo } from "./data/seo";
+import { applyDocumentSeo } from "./seo-client";
 
 type View = "home" | "shop" | "product" | "cart" | "checkout" | "login" | "register" | "account" | "admin" | "about" | "contact" | "sizes" | "search";
 type User = { id: number; email: string; role?: string };

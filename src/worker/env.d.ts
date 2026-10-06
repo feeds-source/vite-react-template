@@ -11,4 +11,5 @@ interface Env {
 	AUTH0_CLIENT_SECRET: string;
 	OAUTH_STATE_SECRET: string;
 	ADMIN_EMAILS: string;
+	ASSETS?: Fetcher;
 }

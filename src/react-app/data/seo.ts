@@ -1,4 +1,4 @@
-import type { Product } from "./catalog";
+import { CATEGORIES, PRODUCTS, categoryFromSlug, categoryPath, type Product } from "./catalog";
 
 export const SITE_NAME = "Femme — Silk Moments";
 export const SITE_URL = "https://www.silkmoments.com";
@@ -143,52 +143,245 @@ export function productHead(p: Product | undefined) {
   };
 }
 
-function setMeta(attr: "name" | "property", key: string, content: string) {
-  let el = document.head.querySelector(`meta[${attr}="${key}"]`);
-  if (!el) {
-    el = document.createElement("meta");
-    el.setAttribute(attr, key);
-    document.head.appendChild(el);
-  }
-  el.setAttribute("content", content);
+const FAQ = [
+  {
+    q: "What is Femme by Silk Moments?",
+    a: "Femme is the Silk Moments house of jewel-tone silk lingerie, lace babydolls, teddies, bridal robes, and lounge.",
+  },
+  {
+    q: "Does Femme offer cash on delivery?",
+    a: "Yes. Femme ships cash on delivery worldwide, packed discreetly.",
+  },
+  {
+    q: "What sizes does Femme cut?",
+    a: "Bras are cut 30B–42C. Night, lounge, robes, and slips run XS–XXL. Charts are at https://www.silkmoments.com/size-guide.",
+  },
+  {
+    q: "How do I contact the atelier?",
+    a: "Write to info@silkmoments.com or use https://www.silkmoments.com/contact.",
+  },
+];
+
+export type SeoDoc = {
+  title: string;
+  description: string;
+  keywords: string;
+  robots: string;
+  canonical: string;
+  ogType: string;
+  image: string;
+  jsonLd: Record<string, unknown>[];
+};
+
+function faqLd() {
+  return {
+    "@type": "FAQPage",
+    mainEntity: FAQ.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
 }
 
-export function applyDocumentSeo(opts: {
-  view: string;
-  product: Product | null;
-  category?: string;
-  room?: string;
-}) {
-  let title = HOUSE_TITLE;
-  let description = HOUSE_DESCRIPTION;
-  let keywords = HOUSE_KEYWORDS;
-  if (opts.view === "product" && opts.product) {
-    title = productTitle(opts.product.name);
-    description = productDescription(opts.product);
-    keywords = keywordsFor(opts.product.id);
-  } else if (opts.view === "shop") {
-    const aisle = opts.category && opts.category !== "All" ? opts.category : opts.room || "All";
-    title = shopTitle(aisle);
-    description = shopDescription(aisle);
-    keywords = `${aisle}, silk lingerie, Femme Silk Moments, cash on delivery lingerie`;
-  } else if (opts.view === "sizes") {
-    title = `Size charts | ${SITE_NAME}`;
-    description = "Bra, nighty, gown, and corset size charts. Find 30B–42C and XS–XXL with sister sizes.";
-    keywords = "lingerie size chart, bra size guide, 30B 32B 34C, sister size, nighty size chart";
-  } else if (opts.view === "about") {
-    title = `The Atelier | ${SITE_NAME}`;
-    description = "The Femme atelier — exotic silk, cut for the body. Emerald, champagne, and ruby lingerie, night, and lounge.";
-    keywords = "silk atelier, femme silk moments, jewel silk, exotic silk lingerie";
-  } else if (opts.view === "contact") {
-    title = `Contact | ${SITE_NAME}`;
-    description = "Write to the Femme atelier. Orders, fit, and house notes — info@silkmoments.com.";
-    keywords = "contact silk moments, femme atelier email, silk lingerie support";
+function websiteLd() {
+  return {
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+    description: HOUSE_DESCRIPTION,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${SITE_URL}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+}
+
+function storeLd() {
+  return {
+    "@type": "ClothingStore",
+    name: SITE_NAME,
+    url: SITE_URL,
+    description: HOUSE_DESCRIPTION,
+    email: "info@silkmoments.com",
+    image: `${SITE_URL}/og.jpg`,
+    currenciesAccepted: "USD",
+    paymentAccepted: "Cash, Credit Card",
+    areaServed: "Worldwide",
+  };
+}
+
+function crumbs(items: { name: string; path: string }[]) {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      item: `${SITE_URL}${item.path}`,
+    })),
+  };
+}
+
+function productLd(p: Product) {
+  return {
+    "@type": "Product",
+    name: p.name,
+    description: productDescription(p),
+    image: `${SITE_URL}${p.image}`,
+    sku: p.id,
+    category: p.category,
+    brand: { "@type": "Brand", name: "Femme — Silk Moments" },
+    offers: {
+      "@type": "Offer",
+      url: `${SITE_URL}/shop/${p.id}`,
+      priceCurrency: "USD",
+      price: p.price.toFixed(2),
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: SITE_NAME },
+    },
+  };
+}
+
+export function resolveSeo(url: URL): SeoDoc {
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  const room = url.searchParams.get("room") || "";
+  const q = url.searchParams.get("q") || "";
+  const privatePath = ["/cart", "/checkout", "/login", "/register", "/account", "/admin"].includes(path);
+  const image = `${SITE_URL}/og.jpg`;
+  const base: SeoDoc = {
+    title: HOUSE_TITLE,
+    description: HOUSE_DESCRIPTION,
+    keywords: HOUSE_KEYWORDS,
+    robots: privatePath ? "noindex, nofollow" : "index, follow",
+    canonical: `${SITE_URL}${path === "/" ? "/" : path}`,
+    ogType: "website",
+    image,
+    jsonLd: [storeLd(), websiteLd(), faqLd()],
+  };
+  if (privatePath) return base;
+
+  if (path === "/search") {
+    base.title = q ? `Search: ${q} | ${SITE_NAME}` : `Search the house | ${SITE_NAME}`;
+    base.description = q
+      ? `Pieces in the Femme house matching “${q}”. Silk lingerie, night, and lounge.`
+      : "Search silk gowns, babydolls, bras, and the size studio.";
+    base.canonical = q ? `${SITE_URL}/search?q=${encodeURIComponent(q)}` : `${SITE_URL}/search`;
+    return base;
   }
-  document.title = title;
-  setMeta("name", "description", description);
-  setMeta("name", "keywords", keywords);
-  setMeta("property", "og:title", title);
-  setMeta("property", "og:description", description);
-  setMeta("name", "twitter:title", title);
-  setMeta("name", "twitter:description", description);
+  if (path === "/size-guide" || path === "/sizes") {
+    base.title = `Size charts | ${SITE_NAME}`;
+    base.description = "Bra, nighty, gown, and corset size charts. Find 30B–42C and XS–XXL with sister sizes.";
+    base.keywords = "lingerie size chart, bra size guide, 30B 32B 34C, sister size, nighty size chart";
+    base.canonical = `${SITE_URL}/size-guide`;
+    return base;
+  }
+  if (path === "/atelier" || path === "/about") {
+    base.title = `The Atelier | ${SITE_NAME}`;
+    base.description = "The Femme atelier — exotic silk, cut for the body. Emerald, champagne, and ruby lingerie, night, and lounge.";
+    base.keywords = "silk atelier, femme silk moments, jewel silk, exotic silk lingerie";
+    base.canonical = `${SITE_URL}/atelier`;
+    return base;
+  }
+  if (path === "/contact") {
+    base.title = `Contact | ${SITE_NAME}`;
+    base.description = "Write to the Femme atelier. Orders, fit, and house notes — info@silkmoments.com.";
+    base.keywords = "contact silk moments, femme atelier email, silk lingerie support";
+    return base;
+  }
+  if (path === "/shop" || path.startsWith("/shop/")) {
+    const slug = path.startsWith("/shop/") ? decodeURIComponent(path.slice("/shop/".length)) : "";
+    const product = slug ? PRODUCTS.find((p) => p.id === slug) : undefined;
+    if (product) {
+      base.title = productTitle(product.name);
+      base.description = productDescription(product);
+      base.keywords = keywordsFor(product.id);
+      base.ogType = "product";
+      base.image = `${SITE_URL}${product.image}`;
+      base.canonical = `${SITE_URL}/shop/${product.id}`;
+      base.jsonLd = [
+        productLd(product),
+        crumbs([
+          { name: "Home", path: "/" },
+          { name: "Shop", path: "/shop" },
+          { name: product.category, path: categoryPath(product.category) },
+          { name: product.name, path: `/shop/${product.id}` },
+        ]),
+      ];
+      return base;
+    }
+    const fromSlug = slug ? categoryFromSlug(slug) : null;
+    const aisle = fromSlug || (room && ["Sleep", "Lingerie", "Lounge"].includes(room) ? room : "All");
+    base.title = shopTitle(aisle);
+    base.description = shopDescription(aisle);
+    base.keywords = `${aisle}, silk lingerie, Femme Silk Moments, cash on delivery lingerie`;
+    base.canonical = fromSlug ? `${SITE_URL}${categoryPath(fromSlug)}` : room ? `${SITE_URL}/shop?room=${encodeURIComponent(room)}` : `${SITE_URL}/shop`;
+    const pieces = PRODUCTS.filter((p) => (fromSlug ? p.category === fromSlug : room ? p.category && CATEGORIES.includes(p.category) : true)).slice(0, 24);
+    const inAisle = fromSlug
+      ? PRODUCTS.filter((p) => p.category === fromSlug)
+      : room === "Sleep"
+        ? PRODUCTS.filter((p) => ["Babydoll", "Short Nighty", "Long Nighty", "Sleep Sets", "Slips", "Gowns", "Teddies", "Robes"].includes(p.category))
+        : room === "Lingerie"
+          ? PRODUCTS.filter((p) => ["Bras", "Bralettes", "Bra Sets", "Panties", "Seamless", "Leakproof", "Active", "Camisole", "Corsetry", "Hosiery", "Body Stockings", "Shapewear"].includes(p.category))
+          : room === "Lounge"
+            ? PRODUCTS.filter((p) => ["Bridal", "Swim", "Loungewear", "Resort", "Thermal", "Accessories"].includes(p.category))
+            : pieces;
+    base.jsonLd = [
+      {
+        "@type": "CollectionPage",
+        name: base.title,
+        description: base.description,
+        url: base.canonical,
+        mainEntity: {
+          "@type": "ItemList",
+          itemListElement: inAisle.slice(0, 24).map((p, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            url: `${SITE_URL}/shop/${p.id}`,
+            name: p.name,
+          })),
+        },
+      },
+      crumbs([
+        { name: "Home", path: "/" },
+        { name: aisle === "All" ? "Shop" : aisle, path: fromSlug ? categoryPath(fromSlug) : "/shop" },
+      ]),
+    ];
+    return base;
+  }
+  if (path !== "/") {
+    base.robots = "noindex, follow";
+    base.title = HOUSE_TITLE;
+  }
+  return base;
+}
+
+export function buildLlmsTxt() {
+  const cats = CATEGORIES.filter((c) => c !== "All");
+  const lines = [
+    "# Femme — Silk Moments",
+    "",
+    "> Jewel-tone silk lingerie, lace babydolls, teddies, bridal robes, and lounge. Cash on delivery worldwide, in discreet packaging.",
+    "",
+    "Femme is an adult house. Bras are cut 30B–42C. Night, lounge, and robes run XS–XXL. Prices are in USD.",
+    "",
+    "## Answers",
+    ...FAQ.flatMap((item) => [`- ${item.q}`, `  ${item.a}`]),
+    "",
+    "## House",
+    `- [Home](${SITE_URL}/): the house`,
+    `- [Shop](${SITE_URL}/shop): every piece`,
+    `- [The Atelier](${SITE_URL}/atelier): how the house is cut`,
+    `- [Size guide](${SITE_URL}/size-guide): 30B–42C and XS–XXL`,
+    `- [Contact](${SITE_URL}/contact): info@silkmoments.com`,
+    "",
+    "## Categories",
+    ...cats.map((c) => `- [${c}](${SITE_URL}${categoryPath(c)})`),
+    "",
+    "## Pieces",
+    ...PRODUCTS.map((p) => `- [${p.name}](${SITE_URL}/shop/${p.id}): $${p.price} — ${p.category}. ${p.description}`),
+    "",
+  ];
+  return lines.join("\n");
 }
