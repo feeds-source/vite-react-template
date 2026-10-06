@@ -624,7 +624,14 @@ function App() {
     return shell(<main className="page"><button type="button" className="back" onClick={() => goShop()}>Back</button>
       <div className="detail-grid">
         <div>
-          <img className="pdp-photo" src={selected.image} alt={selected.name} />
+          <div className="pdp-frame">
+            <img className="ken" src={selected.image} alt={selected.name} />
+            {selected.video ? (
+              <video className="motion-video" autoPlay muted loop playsInline poster={selected.image}>
+                <source src={selected.video} type="video/mp4" />
+              </video>
+            ) : null}
+          </div>
           <FitView product={selected} size={sizeOf(selected)} sizes={sizesFor(selected)} onSize={(sz) => setPickSize((s) => ({ ...s, [selected.id]: sz }))} />
         </div>
         <div className="detail-copy"><h1>{selected.name}</h1><p className="price">{money(selected.price)}</p><p>{selected.description}</p>
