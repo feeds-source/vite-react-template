@@ -34,6 +34,7 @@ type StoreOrder = {
 const TOKEN_KEY = "femme_token";
 const CART_KEY = "femme_cart";
 const NEXT_KEY = "femme_next";
+const SID_KEY = "femme_sid";
 const COUNTRIES = ["United Arab Emirates", "United Kingdom", "Pakistan", "United States", "Other"] as const;
 
 function money(n: number) { return `$${n.toFixed(2)}`; }
@@ -61,6 +62,26 @@ async function api<T>(path: string, opts: RequestInit & { token?: string | null 
   const res = await fetch(path, { ...opts, headers });
   const data = (await res.json().catch(() => ({}))) as T;
   return { ok: res.ok, data };
+}
+
+function sessionId() {
+  let id = sessionStorage.getItem(SID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(SID_KEY, id);
+  }
+  return id;
+}
+
+function track(kind: "click" | "add_to_cart" | "checkout" | "order", label: string, productId = "") {
+  const body = JSON.stringify({
+    session: sessionId(),
+    kind,
+    path: `${window.location.pathname}${window.location.search}`,
+    label: label.replace(/\s+/g, " ").trim().slice(0, 120),
+    productId,
+  });
+  void fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true });
 }
 
 function printSheet(title: string, bodyHtml: string) {
@@ -175,6 +196,7 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(boot.q);
   const [room, setRoom] = useState<Room | "">(boot.room);
+  const [shopEvents, setShopEvents] = useState<Array<{ id: number; created_at: string; session_id: string; kind: string; path: string; label: string; product_id: string }>>([]);
 
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartTotal = cart.reduce((n, l) => n + l.product.price * l.qty, 0);
@@ -213,6 +235,24 @@ function App() {
   }, []);
   useEffect(() => { void refreshMe(token); }, [token, refreshMe]);
   useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart.map((l) => ({ id: l.product.id, qty: l.qty, size: l.size })))); }, [cart]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t || t.closest("input, textarea, select, option")) return;
+      const el = t.closest("button, a");
+      if (!el) return;
+      const label = el.getAttribute("aria-label") || el.textContent || "";
+      if (!label.trim()) return;
+      track("click", label);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+
+  useEffect(() => {
+    if (view === "checkout" && !placed) track("checkout", "Review receipt");
+  }, [view, placed]);
 
   useEffect(() => {
     const onPop = () => {
@@ -256,6 +296,7 @@ function App() {
   function goRoom(next: Room) { setCategory("All"); go("shop", { cat: "All", product: null, room: next }); }
   function sizeOf(p: Product) { return pickSize[p.id] || defaultSize(p); }
   function addToCart(p: Product, size = sizeOf(p)) {
+    track("add_to_cart", `${p.name} · ${size}`, p.id);
     setCart((prev) => {
       const hit = prev.find((l) => l.product.id === p.id && l.size === size);
       if (hit) return prev.map((l) => (l.product.id === p.id && l.size === size ? { ...l, qty: l.qty + 1 } : l));
@@ -286,6 +327,8 @@ function App() {
     const { ok, data } = await api<{ orders?: StoreOrder[]; error?: string }>(`/api/admin/orders${qs}`, { token });
     if (ok) setAdminOrders(data.orders ?? []);
     else setAdminNotice(data.error ?? "Admin access needed");
+    const ev = await api<{ events?: typeof shopEvents }>("/api/admin/events", { token });
+    if (ev.ok) setShopEvents(ev.data.events ?? []);
   }
   async function confirmCheckout(e: FormEvent) {
     e.preventDefault();
@@ -298,6 +341,7 @@ function App() {
     setAuthBusy(false);
     if (!ok || !data.order) { setAuthError(data.error ?? "Could not place order"); return; }
     setPlaced(data.order); setMyOrders((prev) => [data.order!, ...prev]); setCart([]);
+    track("order", data.order.order_no);
     const placedUrl = "/checkout?placed=1";
     if (`${window.location.pathname}${window.location.search}` !== placedUrl) {
       window.history.pushState({ view: "checkout", placed: true }, "", placedUrl);
@@ -613,6 +657,16 @@ function App() {
             <button key={f} type="button" className={adminFilter === f ? "active" : ""} onClick={() => { setAdminFilter(f); void loadAdminOrders(f); }}>{f}</button>
           ))}</div>
           {adminNotice && <p className="muted">{adminNotice}</p>}
+          <h2 className="section-title">Clicks, bag, checkout</h2>
+          {shopEvents.length === 0 ? <p className="muted">No shopper events yet.</p> : (
+            <ul className="order-list">{shopEvents.map((ev) => (
+              <li key={ev.id} className="order-card">
+                <strong>{ev.kind}</strong> <span className="muted">{ev.created_at} UTC</span>
+                <p>{ev.label || "—"} <span className="muted">{ev.path}</span></p>
+                <p className="muted">{ev.session_id.slice(0, 8)}{ev.product_id ? ` · ${ev.product_id}` : ""}</p>
+              </li>
+            ))}</ul>
+          )}
           {openEmail && <aside className="email-preview"><p className="eyebrow">Shipment email</p><strong>{openEmail.subject}</strong><p className="muted">To {openEmail.to_email}</p><pre>{openEmail.body}</pre><button type="button" className="text-link" onClick={() => setOpenEmail(null)}>Close</button></aside>}
           <ul className="order-list">{adminOrders.map((o) => (
             <li key={o.id} className="order-card">
@@ -641,7 +695,7 @@ function App() {
   const productGrid = (
       <div className="grid shop-grid">{gridProducts.map((p) => (
         <article key={p.id} className="card product-tile">
-          <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
+          <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
             <div className="card-visual">
               <img className="ken" src={p.image} alt="" onError={coverFallback} />
               {p.tag && <span className="tag on-dark">{p.tag}</span>}
@@ -748,7 +802,7 @@ function App() {
         </div>
         <div className="grid highlights-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
-            <button type="button" className="card-hit" onClick={() => { go("product", { product: p }); }}>
+            <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
               <div className="card-visual"><img className="ken" src={p.image} alt="" onError={coverFallback} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
             </button>
             <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>

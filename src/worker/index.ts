@@ -20,6 +20,7 @@ import {
 	listAdminOrders,
 	listMyOrders,
 } from "./orders";
+import { listAdminEvents, recordEvent } from "./events";
 import { buildRobotsTxt, buildSitemapXml } from "./sitemap";
 
 type Note = {
@@ -176,6 +177,9 @@ app.get("/api/auth/me", requireAuth, (c) => {
 app.post("/api/orders", requireAuth, (c) => createOrder(c));
 app.get("/api/orders", requireAuth, (c) => listMyOrders(c));
 app.get("/api/orders/:id", requireAuth, (c) => getMyOrder(c));
+
+app.post("/api/events", (c) => recordEvent(c));
+app.get("/api/admin/events", requireAuth, requireAdmin, (c) => listAdminEvents(c));
 
 app.get("/api/admin/orders", requireAuth, requireAdmin, (c) => listAdminOrders(c));
 app.post("/api/admin/orders/:id/confirm", requireAuth, requireAdmin, (c) => confirmOrder(c));
