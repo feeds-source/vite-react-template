@@ -21,6 +21,7 @@ import {
 import { useState } from "react";
 import { SizeFinder, TryRoom } from "./TryRoom";
 import type { Product } from "../data/catalog";
+import { PRODUCTS } from "../data/catalog";
 import type { FitResult } from "../data/size-guide";
 
 function Chart({
@@ -56,6 +57,7 @@ function Chart({
 
 export function SizesView({ onOpen }: { onOpen: (product: Product, size: string) => void }) {
   const [fit, setFit] = useState<FitResult | null>(null);
+  const [focusId, setFocusId] = useState(PRODUCTS[0].id);
   return (
     <>
       <section className="page-hero">
@@ -99,10 +101,10 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
               </li>
             ))}
           </ol>
-          <SizeFinder onFit={setFit} />
+          <SizeFinder onFit={setFit} onPick={(p) => setFocusId(p.id)} />
         </section>
 
-        <TryRoom fit={fit} onOpen={onOpen} />
+        <TryRoom fit={fit} focusId={focusId} onOpen={onOpen} />
 
         <section id="visuals">
           <p className="eyebrow">Visual charts</p>

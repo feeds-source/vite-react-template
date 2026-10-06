@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { chartFor, defaultSize, PRODUCTS, sizesFor, type Product } from "../data/catalog";
+import { useEffect, useMemo, useState } from "react";
+import { CATEGORIES, chartFor, defaultSize, PRODUCTS, sizesFor, type Category, type Product } from "../data/catalog";
 import { recommendFit, type FitResult, type FitUnit } from "../data/size-guide";
 import { FitView } from "./FitView";
 
@@ -16,6 +16,7 @@ type TapeKey = (typeof FIELDS)[number][0];
 type Tape = Record<TapeKey, string>;
 
 const EMPTY: Tape = { under: "", bust: "", waist: "", hip: "", height: "", thigh: "" };
+const LADDER = ["XS", "S", "M", "L", "XL", "XXL"];
 
 function num(raw: string) {
   const n = Number(raw.replace(",", ".").trim());
@@ -30,26 +31,44 @@ function fromChart(product: Product, fit: FitResult) {
   if (chart === "free") return { size: "Free Size", note: "One cut. It drapes S–XL." };
   if (product.category === "Corsetry") return fit.corset ?? fit.body ?? null;
   if (product.category === "Hosiery") return fit.hose ?? fit.body ?? null;
+  if (product.category === "Swim") return fit.body ?? null;
   return fit.body ?? null;
 }
 
-const RESULT_ROWS: Array<{ key: keyof FitResult; label: string }> = [
-  { key: "bra", label: "Bra" },
-  { key: "body", label: "Body" },
-  { key: "nighty", label: "Nighty" },
-  { key: "gown", label: "Gown" },
-  { key: "corset", label: "Corset" },
-  { key: "hose", label: "Hose" },
-];
+function snapSize(wanted: string, run: readonly string[]) {
+  if (run.includes(wanted)) return wanted;
+  const at = LADDER.indexOf(wanted);
+  if (at < 0) return run.includes("Free Size") ? "Free Size" : run[0];
+  let best = run[0];
+  let dist = 99;
+  for (const size of run) {
+    const i = LADDER.indexOf(size);
+    if (i < 0) continue;
+    const gap = Math.abs(i - at);
+    if (gap < dist) {
+      dist = gap;
+      best = size;
+    }
+  }
+  return best;
+}
 
-export function SizeFinder({ onFit }: { onFit: (fit: FitResult | null) => void }) {
+export function sizeForProduct(product: Product, fit: FitResult | null) {
+  if (!fit) return "—";
+  const picked = fromChart(product, fit);
+  if (!picked) return "—";
+  return snapSize(picked.size, sizesFor(product));
+}
+
+const LINES = CATEGORIES.filter((cat): cat is Exclude<Category, "All"> => cat !== "All")
+  .map((cat) => ({ cat, products: PRODUCTS.filter((p) => p.category === cat) }))
+  .filter((line) => line.products.length > 0);
+
+export function SizeFinder({ onFit, onPick }: { onFit: (fit: FitResult | null) => void; onPick: (product: Product) => void }) {
   const [unit, setUnit] = useState<FitUnit>("cm");
   const [tape, setTape] = useState<Tape>(EMPTY);
-  const [fit, setFit] = useState<FitResult | null>(null);
-  const [error, setError] = useState("");
 
-  function find(e: FormEvent) {
-    e.preventDefault();
+  const fit = useMemo(() => {
     const input = {
       unit,
       under: num(tape.under),
@@ -59,24 +78,18 @@ export function SizeFinder({ onFit }: { onFit: (fit: FitResult | null) => void }
       height: num(tape.height),
       thigh: num(tape.thigh),
     };
-    if (!input.under && !input.bust && !input.waist && !input.hip && !input.height && !input.thigh) {
-      setFit(null);
-      onFit(null);
-      setError("Enter at least one measurement.");
-      return;
-    }
-    if ((input.under && !input.bust) || (!input.under && input.bust)) {
-      setError("A bra size needs both underbust and bust. Body, nighty, gown, and corset still use whatever else you entered.");
-    } else {
-      setError("");
-    }
-    const next = recommendFit(input);
-    setFit(next);
-    onFit(next);
-  }
+    if (!input.under && !input.bust && !input.waist && !input.hip && !input.height && !input.thigh) return null;
+    return recommendFit(input);
+  }, [tape, unit]);
+
+  useEffect(() => { onFit(fit); }, [fit, onFit]);
+
+  const hint = fit && ((num(tape.under) && !num(tape.bust)) || (!num(tape.under) && num(tape.bust)))
+    ? "Bra and bridal sizes need both underbust and bust. The other lines use what you have entered."
+    : "";
 
   return (
-    <form className="finder" onSubmit={find}>
+    <form className="finder" onSubmit={(e) => e.preventDefault()}>
       <div className="finder-units">
         <button type="button" className={unit === "cm" ? "on" : ""} onClick={() => setUnit("cm")}>cm</button>
         <button type="button" className={unit === "in" ? "on" : ""} onClick={() => setUnit("in")}>in</button>
@@ -88,68 +101,70 @@ export function SizeFinder({ onFit }: { onFit: (fit: FitResult | null) => void }
           </label>
         ))}
       </div>
-      <button type="submit" className="cta">Find my size</button>
-      {error && <p className="muted try-note">{error}</p>}
-      {fit && (
-        <ul className="finder-results">
-          {RESULT_ROWS.map((row) => {
-            const piece = fit[row.key];
-            return (
-              <li key={row.key}>
-                <span>{row.label}</span>
-                <strong>{piece?.size ?? "—"}</strong>
-                <em>{piece?.note ?? "Add the measurement this chart uses."}</em>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <p className="muted try-note">Sizes update as you type, for every category and every piece.</p>
+      {hint && <p className="muted try-note">{hint}</p>}
+      <ul className="finder-lines">
+        {LINES.map((line) => (
+          <li key={line.cat}>
+            <div className="finder-line-head">
+              <strong>{line.cat}</strong>
+              <span>{sizeForProduct(line.products[0], fit)}</span>
+            </div>
+            <ul>
+              {line.products.map((p) => (
+                <li key={p.id}>
+                  <button type="button" onClick={() => onPick(p)}>
+                    <img src={p.image} alt="" />
+                    <span>{p.name}</span>
+                    <strong>{sizeForProduct(p, fit)}</strong>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
     </form>
   );
 }
 
-export function TryRoom({ fit, onOpen }: { fit: FitResult | null; onOpen: (product: Product, size: string) => void }) {
+export function TryRoom({ fit, focusId, onOpen }: { fit: FitResult | null; focusId: string; onOpen: (product: Product, size: string) => void }) {
   const [product, setProduct] = useState<Product>(PRODUCTS[0]);
   const [size, setSize] = useState(defaultSize(PRODUCTS[0]));
   const [note, setNote] = useState("");
   const sizes = sizesFor(product);
 
   useEffect(() => {
+    const next = PRODUCTS.find((p) => p.id === focusId);
+    if (next) setProduct(next);
+  }, [focusId]);
+
+  useEffect(() => {
     if (!fit) return;
     const picked = fromChart(product, fit);
     if (!picked) {
-      setNote("Find size did not have the measurements for this piece.");
+      setNote("This piece needs a measurement you have not entered yet.");
       return;
     }
-    const run = sizesFor(product);
-    if (run.includes(picked.size)) {
-      setSize(picked.size);
-      setNote(`${picked.size}. ${picked.note}`);
-    } else {
-      setSize(defaultSize(product));
-      setNote(`${picked.size} is not cut in this piece. Showing ${defaultSize(product)}.`);
-    }
+    const worn = snapSize(picked.size, sizesFor(product));
+    setSize(worn);
+    setNote(worn === picked.size ? `${worn}. ${picked.note}` : `${picked.size} is not cut here. Nearest is ${worn}.`);
   }, [fit, product]);
-
-  function choose(next: Product) {
-    const run = sizesFor(next);
-    setProduct(next);
-    if (!fit) setSize(run.includes(size) ? size : defaultSize(next));
-  }
 
   return (
     <section id="try">
       <p className="eyebrow">Virtual try room</p>
       <h2 className="section-title">Try a live piece</h2>
-      <p className="lede">Uses the size Find size just returned, on a live piece.</p>
+      <p className="lede">The size on each piece is the one Find size just calculated.</p>
       <div className="try-layout">
         <div>
           {note && <p className="try-note">{note}</p>}
           <div className="try-products" aria-label="Live products">
             {PRODUCTS.map((p) => (
-              <button key={p.id} type="button" className={p.id === product.id ? "on" : ""} onClick={() => choose(p)}>
+              <button key={p.id} type="button" className={p.id === product.id ? "on" : ""} onClick={() => setProduct(p)}>
                 <img src={p.image} alt="" />
                 <span>{p.name}</span>
+                <em>{sizeForProduct(p, fit)}</em>
               </button>
             ))}
           </div>
