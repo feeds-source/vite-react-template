@@ -1,0 +1,10 @@
+ALTER TABLE orders ADD COLUMN pay_method TEXT NOT NULL DEFAULT 'cod';
+
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  order_no TEXT NOT NULL DEFAULT '',
+  body TEXT NOT NULL
+);

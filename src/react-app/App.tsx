@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode, type SyntheticEvent } from "react";
 import "./App.css";
-import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT } from "./data/banners";
-import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Product } from "./data/catalog";
+import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT, EXCHANGE } from "./data/banners";
+import { CATEGORIES, PRODUCTS, defaultSize, materialsFor, sizesFor, type Product } from "./data/catalog";
 import { FOOTER_AISLES, ROOMS, type Room } from "./data/footer";
 import { ShopView } from "./pages/ShopView";
 import { FitView } from "./pages/FitView";
@@ -28,7 +28,7 @@ type OrderEmail = { id: number; kind: string; to_email: string; subject: string;
 type StoreOrder = {
   id: number; order_no: string; email: string; ship_name: string; ship_addr: string;
   subtotal_cents: number; shipping_cents: number; pack_cents?: number; tax_cents?: number;
-  other_cents?: number; tax_label?: string; ship_country?: string; total_cents: number;
+  other_cents?: number; tax_label?: string; ship_country?: string; pay_method?: string; total_cents: number;
   status: string; tracking: string | null; created_at?: string; confirmed_at?: string | null; dispatched_at?: string | null; items: OrderItem[]; emails?: OrderEmail[];
 };
 
@@ -47,12 +47,12 @@ function taxFor(addr: string, country: string) {
   if (/(germany|france|italy|spain|netherlands|ireland|belgium|austria|sweden)/.test(blob)) return { rate: 0.2, label: "EU VAT 20%" };
   return { rate: 0, label: "Duties & taxes (not charged)" };
 }
-function quoteCart(subtotal: number, qty: number, addr: string, country: string) {
+function quoteCart(subtotal: number, qty: number, addr: string, country: string, pay: "card" | "cod") {
   const pack = qty <= 0 ? 0 : 2.95 + Math.max(0, qty - 1) * 0.85;
   const ship = subtotal >= 100 ? 0 : 8;
   const taxInfo = taxFor(addr, country);
   const tax = Math.round(subtotal * taxInfo.rate * 100) / 100;
-  const other = qty <= 0 ? 0 : 1.5;
+  const other = qty <= 0 || pay === "card" ? 0 : 1.5;
   return { pack, ship, tax, taxLabel: taxInfo.label, other, total: subtotal + pack + ship + tax + other };
 }
 
@@ -163,6 +163,43 @@ function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; produc
   return { view: map[path] ?? "home", cat, product: null, q, room: "" };
 }
 
+function ContactPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [orderNo, setOrderNo] = useState("");
+  const [message, setMessage] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setNote("");
+    const { ok, data } = await api<{ error?: string }>("/api/contact", {
+      method: "POST",
+      body: JSON.stringify({ name, email, orderNo, message }),
+    });
+    setBusy(false);
+    if (!ok) { setNote(data.error ?? "Could not send"); return; }
+    setMessage("");
+    setNote("The atelier has your note.");
+  }
+  return (
+    <main className="page">
+      <h1 className="page-title">Contact</h1>
+      <p className="lede">Write the atelier. Add an order number if you have one.</p>
+      <form className="contact-form" onSubmit={(e) => void send(e)}>
+        <label>Name<input required value={name} onChange={(e) => setName(e.target.value)} /></label>
+        <label>Email<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+        <label>Order number<input value={orderNo} onChange={(e) => setOrderNo(e.target.value)} /></label>
+        <label>Note<textarea required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} /></label>
+        <button type="submit" className="cta" disabled={busy}>{busy ? "Sending…" : "Send"}</button>
+      </form>
+      {note && <p className="muted">{note}</p>}
+      <p className="muted">info@silkmoments.com</p>
+    </main>
+  );
+}
+
 function App() {
   const boot = parseLocation();
   const [view, setViewRaw] = useState<View>(boot.view);
@@ -187,6 +224,9 @@ function App() {
   const [shipName, setShipName] = useState("");
   const [shipAddr, setShipAddr] = useState("");
   const [shipCountry, setShipCountry] = useState<(typeof COUNTRIES)[number]>("United Arab Emirates");
+  const [payMethod, setPayMethod] = useState<"card" | "cod">("card");
+  const [haveAccount, setHaveAccount] = useState(false);
+  const [notes, setNotes] = useState<Array<{ id: number; created_at: string; name: string; email: string; order_no: string; body: string }>>([]);
   const [placed, setPlaced] = useState<StoreOrder | null>(null);
   const [myOrders, setMyOrders] = useState<StoreOrder[]>([]);
   const [adminOrders, setAdminOrders] = useState<StoreOrder[]>([]);
@@ -201,7 +241,7 @@ function App() {
 
   const cartCount = cart.reduce((n, l) => n + l.qty, 0);
   const cartTotal = cart.reduce((n, l) => n + l.product.price * l.qty, 0);
-  const q = quoteCart(cartTotal, cartCount, shipAddr, shipCountry);
+  const q = quoteCart(cartTotal, cartCount, shipAddr, shipCountry, payMethod);
   const isAdmin = user?.role === "admin";
   const filtered = useMemo(() => {
     if (category !== "All") return PRODUCTS.filter((p) => p.category === category);
@@ -333,14 +373,29 @@ function App() {
     else setAdminNotice(data.error ?? "Admin access needed");
     const ev = await api<{ events?: typeof shopEvents }>("/api/admin/events", { token });
     if (ev.ok) setShopEvents(ev.data.events ?? []);
+    const notesRes = await api<{ messages?: typeof notes }>("/api/admin/messages", { token });
+    if (notesRes.ok) setNotes(notesRes.data.messages ?? []);
   }
   async function confirmCheckout(e: FormEvent) {
     e.preventDefault();
-    if (!user || !token || cart.length === 0) return;
+    if (cart.length === 0) return;
     setAuthBusy(true); setAuthError("");
+    let auth = token;
+    if (!auth) {
+      const path = haveAccount ? "/api/auth/login" : "/api/auth/register";
+      const signed = await api<{ token?: string; error?: string }>(path, { method: "POST", body: JSON.stringify({ email: authEmail, password: authPassword }) });
+      if (!signed.ok || !signed.data.token) {
+        setAuthBusy(false);
+        if (signed.data.error === "email already registered") setHaveAccount(true);
+        setAuthError(signed.data.error === "email already registered" ? "That email is already registered. Sign in instead." : (signed.data.error ?? "Could not sign you in"));
+        return;
+      }
+      auth = signed.data.token;
+      persistToken(auth);
+    }
     const { ok, data } = await api<{ order?: StoreOrder; error?: string }>("/api/orders", {
-      method: "POST", token,
-      body: JSON.stringify({ shipName, shipAddr, shipCountry, items: cart.map((l) => ({ id: l.product.id, qty: l.qty })) }),
+      method: "POST", token: auth,
+      body: JSON.stringify({ shipName, shipAddr, shipCountry, payMethod, items: cart.map((l) => ({ id: l.product.id, qty: l.qty })) }),
     });
     setAuthBusy(false);
     if (!ok || !data.order) { setAuthError(data.error ?? "Could not place order"); return; }
@@ -370,7 +425,7 @@ function App() {
     const code = o.tracking || o.order_no;
     const rank = o.status === "dispatched" ? 2 : o.status === "confirmed" ? 1 : 0;
     const steps = [
-      { title: "Order placed", detail: "The atelier has your order. Cash on delivery." },
+      { title: "Order placed", detail: o.pay_method === "card" ? "The atelier has your order. A pay link follows." : "The atelier has your order. Pay when it arrives." },
       { title: "Confirmed", detail: rank >= 1 ? "Your order is being prepared." : "Waiting for the atelier to confirm." },
       { title: "Dispatched", detail: o.tracking ? `On the way. Tracking ${o.tracking}` : "Ships with this same tracking reference." },
     ];
@@ -406,7 +461,7 @@ function App() {
         <li><span>Packaging (box $2.95 + $0.85/extra piece)</span><strong>{pack}</strong></li>
         <li><span>Shipping {(!o && q.ship === 0) || o?.shipping_cents === 0 ? "(free over $100)" : ""}</span><strong>{ship}</strong></li>
         <li><span>{taxL}</span><strong>{tax}</strong></li>
-        <li><span>Other charges (COD handling)</span><strong>{other}</strong></li>
+        <li><span>{(o?.pay_method ?? payMethod) === "card" ? "Card handling" : "Cash on delivery handling"}</span><strong>{other}</strong></li>
         <li className="grand"><span>Total due</span><strong>{total}</strong></li>
       </ul>
     );
@@ -427,6 +482,7 @@ function App() {
     const other = o ? (o.other_cents || 0) : Math.round(q.other * 100);
     const total = o ? o.total_cents : Math.round(q.total * 100);
     const taxL = o?.tax_label || q.taxLabel;
+    const pay = o?.pay_method || payMethod;
     printSheet(`Receipt ${no}`, `
       <h1>FEMME</h1><p class="muted">Silk Atelier · info@silkmoments.com</p>
       <p><strong>Receipt ${no}</strong>${o ? ` · ${o.status}` : " · preview"}</p>
@@ -437,10 +493,10 @@ function App() {
         <tr><td>Packaging</td><td class="r">${moneyCents(pack)}</td></tr>
         <tr><td>Shipping</td><td class="r">${ship === 0 ? "Free" : moneyCents(ship)}</td></tr>
         <tr><td>${taxL}</td><td class="r">${moneyCents(tax)}</td></tr>
-        <tr><td>Other charges (COD)</td><td class="r">${moneyCents(other)}</td></tr>
+        <tr><td>${pay === "card" ? "Card handling" : "Cash on delivery handling"}</td><td class="r">${moneyCents(other)}</td></tr>
         <tr class="total"><td>Total due</td><td class="r">${moneyCents(total)}</td></tr>
       </table>
-      <p class="muted">Payment: cash on delivery. Packaging = $2.95 gift box + $0.85 per extra piece. Shipping free on product totals of $100+.</p>
+      <p class="muted">${pay === "card" ? "Payment: card. A secure pay link is emailed when the atelier confirms. No card number is taken on this page." : "Payment: cash on delivery."} ${EXCHANGE}</p>
     `);
   }
 
@@ -498,7 +554,7 @@ function App() {
         <div>
           <p className="foot-brand">FEMME</p>
           <p className="muted">Silk Atelier</p>
-          <p className="lede">Exotic silk, cut for the body. Complimentary discreet packaging and cash on delivery worldwide.</p>
+          <p className="lede">Exotic silk, cut for the body. Card or cash on delivery. {EXCHANGE}</p>
         </div>
         {FOOTER_AISLES.map((g) => (
           <div key={g.title}>
@@ -564,29 +620,28 @@ function App() {
   }
 
   if (view === "product" && selected) {
+    const cloth = materialsFor(selected);
     return shell(<main className="page"><button type="button" className="back" onClick={() => goShop()}>Back</button>
       <div className="detail-grid">
-        <FitView product={selected} size={sizeOf(selected)} sizes={sizesFor(selected)} onSize={(sz) => setPickSize((s) => ({ ...s, [selected.id]: sz }))} />
+        <div>
+          <img className="pdp-photo" src={selected.image} alt={selected.name} />
+          <FitView product={selected} size={sizeOf(selected)} sizes={sizesFor(selected)} onSize={(sz) => setPickSize((s) => ({ ...s, [selected.id]: sz }))} />
+        </div>
         <div className="detail-copy"><h1>{selected.name}</h1><p className="price">{money(selected.price)}</p><p>{selected.description}</p>
           <label className="size-label">Size
             <select className="size-select" value={sizeOf(selected)} onChange={(e) => setPickSize((s) => ({ ...s, [selected.id]: e.target.value }))}>
               {sizesFor(selected).map((sz) => <option key={sz} value={sz}>{sz}</option>)}
             </select>
           </label>
-          <p className="muted size-guide-note">Complimentary size exchange · Cash on delivery worldwide · <button type="button" className="text-link" onClick={() => go("sizes")}>Size guide</button></p>
+          <p className="muted size-guide-note">{EXCHANGE} <button type="button" className="text-link" onClick={() => go("sizes")}>Size guide</button></p>
           <button type="button" className="cta" onClick={() => addToCart(selected)}>Add to bag</button>
-          <div className="product-trust">
-            <div className="trust-item"><span className="trust-icon" aria-hidden="true">📦</span><div><p className="trust-title">Discreet Atelier Presentation</p><p className="trust-desc">Signature noir & gold presentation box on all orders</p></div></div>
-            <div className="trust-item"><span className="trust-icon" aria-hidden="true">💵</span><div><p className="trust-title">Cash on Delivery Worldwide</p><p className="trust-desc">Doorstep inspection with printable receipt</p></div></div>
-            <div className="trust-item"><span className="trust-icon" aria-hidden="true">📐</span><div><p className="trust-title">14-Day Complimentary Exchange</p><p className="trust-desc">Free size exchange support across 30B–42C & XS–XXL</p></div></div>
-          </div>
           <details className="pdp-tab">
-            <summary>Atelier Silk Care & Materials</summary>
-            <p>100% 19mm Mulberry Silk with French Leavers lace accents. Hand wash cold with delicate silk detergent or dry clean only. Dry flat in shade.</p>
+            <summary>Cloth and care</summary>
+            <p>{cloth.cloth} {cloth.care}</p>
           </details>
           <details className="pdp-tab">
-            <summary>Shipping, Returns & Cash on Delivery</summary>
-            <p>Complimentary discreet luxury packaging with all atelier orders. Cash on delivery worldwide with doorstep inspection. Free size exchanges within 14 days of delivery.</p>
+            <summary>Shipping and exchange</summary>
+            <p>Discreet packaging. Pay by card, or cash when the parcel arrives. {EXCHANGE}</p>
           </details>
         </div></div></main>);
   }
@@ -600,6 +655,7 @@ function App() {
             <button type="button" className="text-link" onClick={() => setQty(l.product.id, l.size, 0)}>Remove</button></li>)}</ul>
           <aside className="cart-sum">
             {totalsBlock()}
+            <p className="muted">{EXCHANGE}</p>
             <button type="button" className="cta" onClick={() => { localStorage.setItem(NEXT_KEY, "checkout"); setPlaced(null); setView("checkout"); }}>Review receipt</button>
           </aside>
         </div>
@@ -627,33 +683,33 @@ function App() {
       ) : (
         <div className="checkout-grid">
           <div>
-            {!user ? (
-              <section className="checkout-auth">
-                <h2>Sign in to continue</h2>
-                <a className="cta google" href="/api/auth/oauth/google?next=checkout" onClick={() => localStorage.setItem(NEXT_KEY, "checkout")}>Continue with Google</a>
-                <form className="contact-form" onSubmit={(e) => { e.preventDefault(); localStorage.setItem(NEXT_KEY, "checkout"); void handleAuth("login"); }}>
-                  <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
-                  <label>Password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
-                  {authError && <p className="auth-error">{authError}</p>}
-                  <button type="submit" className="cta">Sign in & continue</button>
-                </form>
-                <button type="button" className="text-link" onClick={() => setView("register")}>Create account</button>
-              </section>
-            ) : (
-              <form className="contact-form" onSubmit={(e) => void confirmCheckout(e)}>
-                <p className="muted">Signed in as <strong>{user.email}</strong></p>
-                <label>Full name<input required value={shipName} onChange={(e) => setShipName(e.target.value)} /></label>
-                <label>Country
-                  <select value={shipCountry} onChange={(e) => setShipCountry(e.target.value as (typeof COUNTRIES)[number])}>
-                    {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </label>
-                <label>Delivery address<textarea required rows={3} value={shipAddr} onChange={(e) => setShipAddr(e.target.value)} /></label>
-                <p className="muted">Cash on delivery. Confirm only after the receipt looks right.</p>
-                {authError && <p className="auth-error">{authError}</p>}
-                <button type="submit" className="cta" disabled={authBusy || cart.length === 0}>{authBusy ? "Placing…" : `Confirm order · ${money(q.total)}`}</button>
-              </form>
+          <form className="contact-form" onSubmit={(e) => void confirmCheckout(e)}>
+            {user ? <p className="muted">Signed in as <strong>{user.email}</strong></p> : null}
+            <label>Full name<input required value={shipName} onChange={(e) => setShipName(e.target.value)} /></label>
+            <label>Country
+              <select value={shipCountry} onChange={(e) => setShipCountry(e.target.value as (typeof COUNTRIES)[number])}>
+                {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </label>
+            <label>Delivery address<textarea required rows={3} value={shipAddr} onChange={(e) => setShipAddr(e.target.value)} /></label>
+            <fieldset className="pay-choice">
+              <legend>Payment</legend>
+              <label><input type="radio" name="pay" checked={payMethod === "card"} onChange={() => setPayMethod("card")} /> Card</label>
+              <label><input type="radio" name="pay" checked={payMethod === "cod"} onChange={() => setPayMethod("cod")} /> Cash on delivery</label>
+            </fieldset>
+            <p className="muted">{payMethod === "card" ? "A secure pay link is emailed when the atelier confirms. The card number is not taken on this page." : "Pay when the parcel arrives."}</p>
+            {!user && (
+              <>
+                <label>Email<input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} /></label>
+                <label>Password<input type="password" required minLength={8} value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} /></label>
+                <button type="button" className="text-link" onClick={() => setHaveAccount((v) => !v)}>{haveAccount ? "New here? Create the account as you order." : "I already have an account."}</button>
+              </>
             )}
+            <p className="muted">{EXCHANGE}</p>
+            {authError && <p className="auth-error">{authError}</p>}
+            <button type="submit" className="cta" disabled={authBusy || cart.length === 0}>{authBusy ? "Placing…" : `Confirm order · ${money(q.total)}`}</button>
+            {!user && <a className="cta google" href="/api/auth/oauth/google?next=checkout" onClick={() => localStorage.setItem(NEXT_KEY, "checkout")}>Or continue with Google</a>}
+          </form>
           </div>
           <aside className="cart-sum receipt-sheet">
             <p className="eyebrow">Receipt</p>
@@ -690,6 +746,15 @@ function App() {
             <button key={f} type="button" className={adminFilter === f ? "active" : ""} onClick={() => { setAdminFilter(f); void loadAdminOrders(f); }}>{f}</button>
           ))}</div>
           {adminNotice && <p className="muted">{adminNotice}</p>}
+          <h2 className="section-title">Notes</h2>
+          {notes.length === 0 ? <p className="muted">No notes yet.</p> : (
+            <ul className="order-list">{notes.map((n) => (
+              <li key={n.id} className="order-card">
+                <strong>{n.name}</strong> <span className="muted">{n.email}{n.order_no ? ` · ${n.order_no}` : ""}</span>
+                <p>{n.body}</p>
+              </li>
+            ))}</ul>
+          )}
           <h2 className="section-title">Clicks, bag, checkout</h2>
           {shopEvents.length === 0 ? <p className="muted">No shopper events yet.</p> : (
             <ul className="order-list">{shopEvents.map((ev) => (
@@ -722,7 +787,7 @@ function App() {
   }
 
   if (view === "about") return <div className="store">{header}<AtelierView onShop={(c) => goShop(c ?? "All")} onSizes={() => go("sizes")} />{footer}</div>;
-  if (view === "contact") return shell(<main className="page"><h1 className="page-title">Contact</h1><p className="muted">info@silkmoments.com</p></main>);
+  if (view === "contact") return shell(<ContactPage />);
   const searchHits = searchHouse(searchQuery, 48);
   const gridProducts = view === "search" ? searchHits.products : filtered;
   const productGrid = (
@@ -730,7 +795,7 @@ function App() {
         <article key={p.id} className="card product-tile">
           <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
             <div className="card-visual">
-              <img className="ken" src={p.image} alt="" onError={coverFallback} />
+              <img className="ken" src={p.image} alt={p.name} onError={coverFallback} />
               {p.tag && <span className="tag on-dark">{p.tag}</span>}
             </div>
           </button>
@@ -776,7 +841,6 @@ function App() {
         <div className="trust-strip">
           {TRUST.map((t) => (
             <div key={t.title} className="trust-item">
-              <span className="trust-icon" aria-hidden="true">{t.icon}</span>
               <div>
                 <p className="trust-title">{t.title}</p>
                 <p className="trust-desc">{t.desc}</p>
@@ -819,7 +883,7 @@ function App() {
         <h2 className="page-title">Walk the house</h2>
         <div className="aisle-grid">
           {AISLES.map((a) => (
-            <button key={a.cat} type="button" className="aisle" onClick={() => goRoom(a.room)}>
+            <button key={a.cat} type="button" className="aisle" onClick={() => goShop(a.cat)}>
               <img src={a.image} alt="" />
               <div className="hero-veil" />
               <span><em>{a.cat}</em><b>{a.title}</b></span>
@@ -836,7 +900,7 @@ function App() {
         <div className="grid highlights-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
             <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
-              <div className="card-visual"><img className="ken" src={p.image} alt="" onError={coverFallback} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
+              <div className="card-visual"><img className="ken" src={p.image} alt={p.name} onError={coverFallback} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
             </button>
             <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
             <div className="card-actions">
@@ -853,7 +917,7 @@ function App() {
       <section className="campaign-home">
         {SPLIT.map((p) => (
           <button key={p.title} type="button" className="campaign-panel" onClick={() => goRoom(p.room)}>
-            <img className="ken" src={p.image} alt="" onError={coverFallback} />
+            <img className="ken" src={p.image} alt={p.title} onError={coverFallback} />
             <div className="hero-veil" />
             <span className="eyebrow">{p.kicker}</span>
             <strong>{p.title}</strong>

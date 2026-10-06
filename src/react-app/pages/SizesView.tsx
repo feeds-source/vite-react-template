@@ -20,8 +20,8 @@ import {
 } from "../data/size-guide";
 import { useState } from "react";
 import { SizeFinder, TryRoom } from "./TryRoom";
-import type { Product } from "../data/catalog";
-import { PRODUCTS } from "../data/catalog";
+import { EXCHANGE } from "../data/banners";
+import { PRODUCTS, type Product } from "../data/catalog";
 import type { FitResult } from "../data/size-guide";
 
 function Chart({
@@ -288,8 +288,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
         </section>
 
         <p className="muted">
-          Between sizes? Write <a href="mailto:info@silkmoments.com">info@silkmoments.com</a>. Returns are not offered on
-          worn pieces — measure first.
+          Between sizes? Write <a href="mailto:info@silkmoments.com">info@silkmoments.com</a>. {EXCHANGE}
         </p>
       </main>
     </>

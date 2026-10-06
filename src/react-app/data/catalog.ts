@@ -135,10 +135,69 @@ export const COUNTRIES = [
   "Other",
 ] as const;
 
-const piece = (id: string) => ({
-  image: `/products/${id}.jpg`,
-  video: `/products/${id}.mp4`,
-});
+const NO_FILM = new Set([
+  "ruby-brazilian",
+  "satin-night-set",
+  "silk-night-slip",
+  "satin-gown",
+  "emerald-teddy",
+  "getting-ready-robe",
+  "emerald-bustier",
+  "silk-kaftan",
+  "sculpt-midi",
+  "silk-bikini",
+  "lace-balconette-set",
+  "lace-camisole",
+  "ruby-babydoll",
+  "short-lace-nighty",
+  "noir-teddy",
+  "body-stocking",
+  "ivory-bridal-set",
+  "daily-hipster",
+  "plum-wrap",
+  "mesh-bodysuit",
+]);
+
+const piece = (id: string) =>
+  NO_FILM.has(id)
+    ? { image: `/products/${id}.jpg` }
+    : { image: `/products/${id}.jpg`, video: `/products/${id}.mp4` };
+
+const CLOTH: Record<Category, string> = {
+  Bras: "Microfiber cups. Not a silk shell.",
+  Bralettes: "Stretch lace, unwired. Not a silk shell.",
+  "Bra Sets": "Lace balconette and brief. The lace is the cloth.",
+  Panties: "Modal jersey or silk, as named on the piece. Not one cloth for the aisle.",
+  Seamless: "Bonded microfiber. No lace and no silk face.",
+  Leakproof: "Silk-feel jersey with a stay-dry gusset. Not pure silk.",
+  Active: "Smooth microfiber, wireless. Not a silk shell.",
+  Camisole: "Stretch lace. Openwork, not a solid silk panel.",
+  Babydoll: "Lace. The openwork is the cloth.",
+  "Short Nighty": "Lace or satin, as named on the piece.",
+  "Long Nighty": "Silk charmeuse. A side light finds the ridge.",
+  "Sleep Sets": "Silk charmeuse shirt and trouser.",
+  Slips: "Satin slip. Not a lace panel.",
+  Gowns: "Satin. Cool to the hand.",
+  Teddies: "Lace or silk, as named on the piece.",
+  Robes: "Silk or knit, as named on the piece.",
+  Bridal: "Lace or silk charmeuse, as named on the piece.",
+  Corsetry: "Silk or lace with boning, as named on the piece.",
+  Hosiery: "Silk-look hose or lace welts, as named on the piece.",
+  "Body Stockings": "Sheer lace, one piece.",
+  Shapewear: "Power mesh or a satin slip, as named on the piece.",
+  Swim: "Silk charmeuse.",
+  Loungewear: "Knit or modal, as named on the piece.",
+  Resort: "Silk charmeuse.",
+  Thermal: "Brushed thermal knit, or a knitted wrap.",
+  Accessories: "Silk or metal, as named on the piece.",
+};
+
+export function materialsFor(p: Product) {
+  return {
+    cloth: CLOTH[p.category],
+    care: "Hand wash cold. Dry flat in shade. Do not tumble.",
+  };
+}
 
 export function chartFor(p: Product): SizeChart {
   return p.sizeChart ?? CHART_FOR[p.category];

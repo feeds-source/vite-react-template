@@ -57,7 +57,6 @@ export const CAT_HERO: Record<"All" | Category, ShopHero> = {
   },
   "Bra Sets": {
     image: "/products/lace-balconette-set.jpg",
-    video: "/products/lace-balconette-set.mp4",
     kicker: "Body",
     body: "Balconette pairs. Midnight lace with a matching brief.",
   },
@@ -73,7 +72,6 @@ export const CAT_HERO: Record<"All" | Category, ShopHero> = {
   },
   Babydoll: {
     image: "/products/ruby-babydoll.jpg",
-    video: "/products/ruby-babydoll.mp4",
     kicker: "Night",
     body: "Short lace night. Ruby, orchid, noir — hem above the knee.",
   },
@@ -95,19 +93,16 @@ export const CAT_HERO: Record<"All" | Category, ShopHero> = {
   },
   Teddies: {
     image: "/products/noir-teddy.jpg",
-    video: "/products/noir-teddy.mp4",
     kicker: "Night",
     body: "One-piece lace and jewel silk, cut for candlelight.",
   },
   Bridal: {
     image: "/products/ivory-bridal-set.jpg",
-    video: "/products/ivory-bridal-set.mp4",
     kicker: "After dusk",
     body: "Ivory lace, pearl clasps, getting-ready robes.",
   },
   Corsetry: {
     image: "/products/emerald-bustier.jpg",
-    video: "/products/emerald-bustier.mp4",
     kicker: "Body",
     body: "Boning and gold. Hourglass, not squeeze — lace 4–6 cm.",
   },
@@ -118,7 +113,6 @@ export const CAT_HERO: Record<"All" | Category, ShopHero> = {
   },
   "Body Stockings": {
     image: "/products/body-stocking.jpg",
-    video: "/products/body-stocking.mp4",
     kicker: "Body",
     body: "Sheer noir lace, one piece. Free size, made to drape.",
   },

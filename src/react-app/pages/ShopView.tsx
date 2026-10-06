@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { AISLES, CAMPAIGNS } from "../data/banners";
 import { CATEGORIES } from "../data/catalog";
+import { ROOMS, type Room } from "../data/footer";
 import { CAT_HERO } from "../data/house";
-import type { Room } from "../data/footer";
 
 export function ShopView({
   category,
@@ -26,6 +26,8 @@ export function ShopView({
     ? { image: campaign.poster, video: campaign.video, kicker: campaign.kicker, body: campaign.title }
     : CAT_HERO.All;
   const title = category !== "All" ? category : room || "Shop the house";
+  const activeRoom: Room | "" = room || (category !== "All" ? (Object.keys(ROOMS) as Room[]).find((r) => (ROOMS[r] as readonly string[]).includes(category)) ?? "" : "");
+  const roomCats = activeRoom ? ROOMS[activeRoom] : [];
   return (
     <>
       <section className="page-hero">
@@ -49,7 +51,7 @@ export function ShopView({
           <h2 className="page-title">Walk the house</h2>
           <div className="aisle-grid">
             {AISLES.map((a) => (
-              <button key={a.cat} type="button" className="aisle" onClick={() => onRoom(a.room)}>
+              <button key={a.cat} type="button" className="aisle" onClick={() => onCat(a.cat)}>
                 <img src={a.image} alt="" />
                 <div className="hero-veil" />
                 <span>
@@ -64,13 +66,24 @@ export function ShopView({
 
       <nav className="guide-nav">
         <div className="guide-nav-inner">
-          {CATEGORIES.map((c) => (
-            <button key={c} type="button" className={category === c ? "pill is-on" : "pill"} onClick={() => onCat(c)}>
-              {c}
+          {(Object.keys(ROOMS) as Room[]).map((r) => (
+            <button key={r} type="button" className={activeRoom === r && category === "All" ? "pill is-on" : "pill"} onClick={() => onRoom(r)}>
+              {r === "Lingerie" ? "Lingerie" : r}
             </button>
           ))}
         </div>
       </nav>
+      {roomCats.length > 0 && (
+        <nav className="guide-nav">
+          <div className="guide-nav-inner">
+            {roomCats.map((c) => (
+              <button key={c} type="button" className={category === c ? "pill is-on" : "pill"} onClick={() => onCat(c)}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
 
       <main className="page">
         <div className="catalog-head">

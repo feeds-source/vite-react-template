@@ -178,6 +178,26 @@ app.post("/api/orders", requireAuth, (c) => createOrder(c));
 app.get("/api/orders", requireAuth, (c) => listMyOrders(c));
 app.get("/api/orders/:id", requireAuth, (c) => getMyOrder(c));
 
+app.post("/api/contact", async (c) => {
+	const body = await c.req.json<{ name?: string; email?: string; orderNo?: string; message?: string }>().catch(() => null);
+	const name = body?.name?.trim() ?? "";
+	const email = body?.email?.trim().toLowerCase() ?? "";
+	const orderNo = body?.orderNo?.trim().slice(0, 40) ?? "";
+	const message = body?.message?.trim() ?? "";
+	if (!name || !email || !message) return c.json({ error: "name, email, and a note are required" }, 400);
+	if (!/^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(email)) return c.json({ error: "invalid email" }, 400);
+	if (message.length > 2000) return c.json({ error: "note is too long" }, 400);
+	await c.env.DB.prepare("INSERT INTO messages (name, email, order_no, body) VALUES (?, ?, ?, ?)").bind(name, email, orderNo, message).run();
+	return c.json({ ok: true }, 201);
+});
+
+app.get("/api/admin/messages", requireAuth, requireAdmin, async (c) => {
+	const { results } = await c.env.DB.prepare(
+		"SELECT id, created_at, name, email, order_no, body FROM messages ORDER BY id DESC LIMIT 40",
+	).all<{ id: number; created_at: string; name: string; email: string; order_no: string; body: string }>();
+	return c.json({ messages: results ?? [] });
+});
+
 app.post("/api/events", (c) => recordEvent(c));
 app.get("/api/admin/events", requireAuth, requireAdmin, (c) => listAdminEvents(c));
 

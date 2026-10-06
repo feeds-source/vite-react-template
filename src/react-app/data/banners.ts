@@ -6,7 +6,7 @@ export const HERO = {
   video: "/banners/hero.mp4",
   kicker: "Night Atelier · Pure Silk & Lace",
   title: "Exotic silk, cut for the body.",
-  body: "Jewel-tone lounge, sleep, and lingerie in emerald, champagne, and ruby. Cash on delivery worldwide with signature atelier presentation.",
+  body: "Jewel-tone lounge, sleep, and lingerie in emerald, champagne, and ruby. Pay by card, or cash when it arrives.",
 };
 
 export const CAMPAIGNS = [
@@ -65,11 +65,13 @@ export const SPLIT: { kicker: string; title: string; image: string; room: Room }
   { kicker: "Bespoke evening", title: "Gold seaming and noir", image: "/products/ruby-waspie.jpg", room: "Sleep" },
 ];
 
+export const EXCHANGE = "Complimentary size exchange within 14 days. Worn pieces are not refunded — measure first.";
+
 export const TRUST = [
-  { icon: "📐", title: "30B–42C & XS–XXL", desc: "Cut to the tape with interactive sister size matrix" },
-  { icon: "📦", title: "Discreet Luxury Packaging", desc: "Signature noir and gold presentation box on all orders" },
-  { icon: "💵", title: "Cash on Delivery", desc: "Doorstep payment worldwide with printable receipt" },
-  { icon: "↺", title: "14-Day Free Exchange", desc: "Effortless fit guarantee on all unworn pieces" },
+  { title: "Fit", desc: "30B–42C and XS–XXL, cut to the tape." },
+  { title: "Box", desc: "Noir and gold presentation on every order." },
+  { title: "Pay", desc: "Card, or cash when the parcel arrives." },
+  { title: "Exchange", desc: EXCHANGE },
 ] as const;
 
 export const STORY = {
@@ -79,4 +81,4 @@ export const STORY = {
 };
 
 export const ANNOUNCEMENT =
-  "Complimentary discreet packaging · Cash on delivery worldwide · Free size exchanges within 14 days";
+  "Card or cash on delivery · Complimentary size exchange within 14 days · Worn pieces are not refunded";

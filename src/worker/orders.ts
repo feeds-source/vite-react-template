@@ -17,6 +17,7 @@ export type OrderRow = {
 	other_cents: number;
 	tax_label: string;
 	ship_country: string;
+	pay_method: string;
 	total_cents: number;
 	status: string;
 	tracking: string | null;
@@ -46,7 +47,7 @@ export type OrderEmailRow = {
 };
 
 const ORDER_COLS =
-	"id, order_no, user_id, email, ship_name, ship_addr, currency, subtotal_cents, shipping_cents, COALESCE(pack_cents,0) AS pack_cents, COALESCE(tax_cents,0) AS tax_cents, COALESCE(other_cents,0) AS other_cents, COALESCE(tax_label,'Duties & taxes') AS tax_label, COALESCE(ship_country,'') AS ship_country, total_cents, status, tracking, created_at, confirmed_at, dispatched_at";
+	"id, order_no, user_id, email, ship_name, ship_addr, currency, subtotal_cents, shipping_cents, COALESCE(pack_cents,0) AS pack_cents, COALESCE(tax_cents,0) AS tax_cents, COALESCE(other_cents,0) AS other_cents, COALESCE(tax_label,'Duties & taxes') AS tax_label, COALESCE(ship_country,'') AS ship_country, COALESCE(pay_method,'cod') AS pay_method, total_cents, status, tracking, created_at, confirmed_at, dispatched_at";
 
 export function adminEmails(env: Env): string[] {
 	return (env.ADMIN_EMAILS || "")
@@ -105,12 +106,12 @@ function receiptText(order: OrderRow, items: OrderItemRow[], extra = ""): string
 		`Packaging        ${formatMoney(order.pack_cents || 0)}`,
 		`Shipping         ${order.shipping_cents === 0 ? "Free" : formatMoney(order.shipping_cents)}`,
 		`${order.tax_label || "Duties & taxes"}  ${formatMoney(order.tax_cents || 0)}`,
-		`COD handling     ${formatMoney(order.other_cents || 0)}`,
+		`${order.pay_method === "card" ? "Card handling" : "Cash on delivery handling"}  ${formatMoney(order.other_cents || 0)}`,
 		`Total due        ${formatMoney(order.total_cents)}`,
 		order.tracking ? `Tracking  ${order.tracking}` : "",
 		extra,
 		``,
-		`Payment: cash on delivery`,
+		`Payment: ${order.pay_method === "card" ? "card — a secure pay link follows when the atelier confirms" : "cash on delivery"}`,
 		`Questions: info@silkmoments.com`,
 	]
 		.filter((line) => line !== "")
@@ -143,6 +144,7 @@ export async function createOrder(c: Context<AppEnv>) {
 			shipName?: string;
 			shipAddr?: string;
 			shipCountry?: string;
+			payMethod?: string;
 			items?: Array<{ id?: string; qty?: number }>;
 		}>()
 		.catch(() => null);
@@ -150,6 +152,7 @@ export async function createOrder(c: Context<AppEnv>) {
 	const shipName = body?.shipName?.trim();
 	const shipAddr = body?.shipAddr?.trim();
 	const shipCountry = body?.shipCountry?.trim() || "";
+	const pay = body?.payMethod === "card" ? "card" : "cod";
 	const rawItems = body?.items ?? [];
 	if (!shipName || !shipAddr) return c.json({ error: "name and delivery address are required" }, 400);
 	if (!rawItems.length) return c.json({ error: "bag is empty" }, 400);
@@ -166,12 +169,12 @@ export async function createOrder(c: Context<AppEnv>) {
 
 	const subtotal = lines.reduce((n, l) => n + l.unit_cents * l.qty, 0);
 	const itemCount = lines.reduce((n, l) => n + l.qty, 0);
-	const quote = quoteOrder(subtotal, itemCount, shipAddr, shipCountry);
+	const quote = quoteOrder(subtotal, itemCount, shipAddr, shipCountry, pay);
 	const orderNo = `FM${Date.now().toString(36).toUpperCase()}`;
 
 	const order = await c.env.DB.prepare(
-		`INSERT INTO orders (order_no, user_id, email, ship_name, ship_addr, currency, subtotal_cents, shipping_cents, pack_cents, tax_cents, other_cents, tax_label, ship_country, total_cents, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'received')
+		`INSERT INTO orders (order_no, user_id, email, ship_name, ship_addr, currency, subtotal_cents, shipping_cents, pack_cents, tax_cents, other_cents, tax_label, ship_country, pay_method, total_cents, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'received')
      RETURNING ${ORDER_COLS}`,
 	)
 		.bind(
@@ -188,6 +191,7 @@ export async function createOrder(c: Context<AppEnv>) {
 			quote.other,
 			quote.taxLabel,
 			shipCountry,
+			pay,
 			quote.total,
 		)
 		.first<OrderRow>();

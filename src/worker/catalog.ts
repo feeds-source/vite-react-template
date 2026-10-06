@@ -83,12 +83,12 @@ export function otherCents(): number {
 	return 150;
 }
 
-export function quoteOrder(subtotalCents: number, itemCount: number, address: string, country: string) {
+export function quoteOrder(subtotalCents: number, itemCount: number, address: string, country: string, pay: "card" | "cod" = "cod") {
 	const taxInfo = taxForDestination(address, country);
 	const packaging = packagingCents(itemCount);
 	const shipping = shippingCents(subtotalCents);
 	const tax = Math.round(subtotalCents * taxInfo.rate);
-	const other = otherCents();
+	const other = pay === "card" ? 0 : otherCents();
 	return {
 		packaging,
 		shipping,

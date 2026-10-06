@@ -1,4 +1,5 @@
 import type { Category } from "../data/catalog";
+import { EXCHANGE } from "../data/banners";
 import { ATELIER_CRAFT, ATELIER_LOOK, ATELIER_ROOMS } from "../data/house";
 
 export function AtelierView({
@@ -40,13 +41,7 @@ export function AtelierView({
             Pieces are cut for 30B–42C and Free Size to XXL. Cash on delivery worldwide. A printable receipt at every
             order.
           </p>
-          <p className="muted">
-            Returns are not offered on worn pieces — measure first, then write{" "}
-            <a className="text-link" href="mailto:info@silkmoments.com">
-              info@silkmoments.com
-            </a>
-            .
-          </p>
+          <p className="muted">{EXCHANGE}</p>
         </div>
       </section>
 
@@ -123,10 +118,10 @@ export function AtelierView({
         <img className="ken" src="/banners/lounge.jpg" alt="" />
         <div className="hero-veil" />
         <div className="page-hero-copy">
-          <p className="eyebrow">Cash on delivery</p>
-          <h2 className="page-title">Worldwide. A receipt you can print.</h2>
+          <p className="eyebrow">Payment</p>
+          <h2 className="page-title">Card, or cash when it arrives.</h2>
           <p className="lede">
-            Confirm the bag, we pack in a gift box, you pay when it arrives. Tracking once the atelier dispatches.
+            Card is a secure link after the atelier confirms. Cash on delivery stays available. {EXCHANGE}
           </p>
           <button type="button" className="cta" onClick={() => onShop()}>
             Shop the house
