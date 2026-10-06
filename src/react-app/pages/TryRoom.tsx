@@ -114,7 +114,7 @@ export function SizeFinder({ onFit, onPick }: { onFit: (fit: FitResult | null) =
               {line.products.map((p) => (
                 <li key={p.id}>
                   <button type="button" onClick={() => onPick(p)}>
-                    <img src={p.image} alt="" />
+                    <img className="ken" src={p.image} alt="" />
                     <span>{p.name}</span>
                     <strong>{sizeForProduct(p, fit)}</strong>
                   </button>
@@ -162,7 +162,14 @@ export function TryRoom({ fit, focusId, onOpen }: { fit: FitResult | null; focus
           <div className="try-products" aria-label="Live products">
             {PRODUCTS.map((p) => (
               <button key={p.id} type="button" className={p.id === product.id ? "on" : ""} onClick={() => setProduct(p)}>
-                <img src={p.image} alt="" />
+                <span className="try-still">
+                  <img className="ken" src={p.image} alt="" />
+                  {p.id === product.id && p.video ? (
+                    <video className="motion-video" autoPlay muted loop playsInline poster={p.image}>
+                      <source src={p.video} type="video/mp4" />
+                    </video>
+                  ) : null}
+                </span>
                 <span>{p.name}</span>
                 <em>{sizeForProduct(p, fit)}</em>
               </button>
@@ -170,6 +177,14 @@ export function TryRoom({ fit, focusId, onOpen }: { fit: FitResult | null; focus
           </div>
         </div>
         <div>
+          <div className="pdp-frame">
+            <img className="ken" src={product.image} alt={product.name} />
+            {product.video ? (
+              <video className="motion-video" autoPlay muted loop playsInline poster={product.image}>
+                <source src={product.video} type="video/mp4" />
+              </video>
+            ) : null}
+          </div>
           <FitView product={product} size={size} sizes={sizes} onSize={setSize} />
           <button type="button" className="cta" onClick={() => onOpen(product, size)}>Open {product.name}</button>
         </div>

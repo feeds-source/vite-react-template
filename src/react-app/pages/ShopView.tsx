@@ -25,6 +25,7 @@ export function ShopView({
   const hero = category !== "All" ? CAT_HERO[category] : campaign
     ? { image: campaign.poster, video: campaign.video, kicker: campaign.kicker, body: campaign.title }
     : CAT_HERO.All;
+  const heroFilm = hero.video || hero.image.replace(/\.jpg$/, ".mp4");
   const title = category !== "All" ? category : room || "Shop the house";
   const activeRoom: Room | "" = room || (category !== "All" ? (Object.keys(ROOMS) as Room[]).find((r) => (ROOMS[r] as readonly string[]).includes(category)) ?? "" : "");
   const roomCats = activeRoom ? ROOMS[activeRoom] : [];
@@ -32,11 +33,9 @@ export function ShopView({
     <>
       <section className="page-hero">
         <img className="ken" src={hero.image} alt="" />
-        {hero.video ? (
-          <video className="motion-video" autoPlay muted loop playsInline poster={hero.image}>
-            <source src={hero.video} type="video/mp4" />
-          </video>
-        ) : null}
+        <video className="motion-video" autoPlay muted loop playsInline poster={hero.image}>
+          <source src={heroFilm} type="video/mp4" />
+        </video>
         <div className="hero-veil" />
         <div className="page-hero-copy">
           <p className="eyebrow">{hero.kicker}</p>

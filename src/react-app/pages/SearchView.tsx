@@ -32,6 +32,9 @@ export function SearchView({
     <>
       <section className="page-hero">
         <img className="ken" src="/banners/lounge.jpg" alt="" />
+        <video className="motion-video" autoPlay muted loop playsInline poster="/banners/lounge.jpg">
+          <source src="/banners/lounge.mp4" type="video/mp4" />
+        </video>
         <div className="hero-veil" />
         <div className="page-hero-copy">
           <p className="eyebrow">Search</p>

@@ -140,7 +140,14 @@ export function SearchModal({
                     <div className="predictive-grid">
                       {hits.products.map((p) => (
                         <button key={p.id} type="button" className="predictive-item" onClick={() => onProduct(p)}>
-                          <img src={p.image} alt="" />
+                          <span className="predictive-still">
+                            <img className="ken" src={p.image} alt="" />
+                            {p.video ? (
+                              <video className="motion-video" autoPlay muted loop playsInline poster={p.image}>
+                                <source src={p.video} type="video/mp4" />
+                              </video>
+                            ) : null}
+                          </span>
                           <span>
                             <strong>{p.name}</strong>
                             <em>${p.price.toFixed(2)}</em>
