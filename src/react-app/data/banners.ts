@@ -31,7 +31,7 @@ export const CAMPAIGNS = [
   {
     id: "lounge",
     poster: "/banners/lounge.jpg",
-    video: null,
+    video: "/banners/lounge.mp4",
     kicker: "Lounge Room",
     title: "Emerald after dusk & resort robes",
     room: "Lounge" as const satisfies Room,

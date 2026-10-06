@@ -883,7 +883,12 @@ function App() {
           ))}
         </div>
       </section>
-      <div className="marquee" aria-hidden="true"><div className="marquee-track">{[...MARQUEE, ...MARQUEE].map((m, i) => <img key={i} src={m.src} alt="" />)}</div></div>
+      <div className="marquee" aria-hidden="true"><div className="marquee-track">{[...MARQUEE, ...MARQUEE].map((m, i) => (
+        <span className="marquee-still" key={i}>
+          <img src={m.src} alt="" />
+          <video className="motion-video" autoPlay muted loop playsInline poster={m.src}><source src={m.src.replace(/\.jpg$/, ".mp4")} type="video/mp4" /></video>
+        </span>
+      ))}</div></div>
       <section className="campaign-home">
         {CAMPAIGNS.map((c) => (
           <button key={c.id} type="button" className="campaign-panel" onClick={() => goRoom(c.room)}>
@@ -898,7 +903,10 @@ function App() {
       <section className="page">
         <div className="atelier-story-card">
           <div className="atelier-story-media">
-            <img src={HERO.poster} alt="The Femme Atelier" />
+            <img className="ken" src={HERO.poster} alt="The Femme Atelier" />
+            <video className="motion-video" autoPlay muted loop playsInline poster={HERO.poster}>
+              <source src={HERO.video} type="video/mp4" />
+            </video>
             <div className="hero-veil" style={{ opacity: 0.35 }} />
           </div>
           <div className="atelier-story-content">
@@ -918,7 +926,10 @@ function App() {
         <div className="aisle-grid">
           {AISLES.map((a) => (
             <button key={a.cat} type="button" className="aisle" onClick={() => goShop(a.cat)}>
-              <img src={a.image} alt="" />
+              <img className="ken" src={a.image} alt="" />
+              <video className="motion-video" autoPlay muted loop playsInline poster={a.image}>
+                <source src={a.image.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
+              </video>
               <div className="hero-veil" />
               <span><em>{a.cat}</em><b>{a.title}</b></span>
             </button>
@@ -952,6 +963,9 @@ function App() {
         {SPLIT.map((p) => (
           <button key={p.title} type="button" className="campaign-panel" onClick={() => goRoom(p.room)}>
             <img className="ken" src={p.image} alt={p.title} onError={coverFallback} />
+            <video className="motion-video" autoPlay muted loop playsInline poster={p.image}>
+              <source src={p.image.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
+            </video>
             <div className="hero-veil" />
             <span className="eyebrow">{p.kicker}</span>
             <strong>{p.title}</strong>

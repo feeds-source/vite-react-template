@@ -52,7 +52,10 @@ export function ShopView({
           <div className="aisle-grid">
             {AISLES.map((a) => (
               <button key={a.cat} type="button" className="aisle" onClick={() => onCat(a.cat)}>
-                <img src={a.image} alt="" />
+                <img className="ken" src={a.image} alt="" />
+                <video className="motion-video" autoPlay muted loop playsInline poster={a.image}>
+                  <source src={a.image.replace(/\.jpg$/, ".mp4")} type="video/mp4" />
+                </video>
                 <div className="hero-veil" />
                 <span>
                   <em>{a.cat}</em>

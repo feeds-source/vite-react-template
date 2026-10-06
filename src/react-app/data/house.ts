@@ -169,6 +169,7 @@ export const ATELIER_ROOMS = [
     title: "After dusk",
     kicker: FOOTER_AISLES[2]!.title,
     image: "/banners/lounge.jpg",
+    video: "/banners/lounge.mp4",
     body: "Bridal ivory, jewel swim, lounge, resort, thermal, and the small gold things worn last.",
     cats: FOOTER_AISLES[2]!.cats,
   },
@@ -197,7 +198,7 @@ export const ATELIER_LOOK = [
   { src: "/banners/hero.jpg", video: "/banners/hero.mp4", label: "House film" },
   { src: "/banners/sleep.jpg", video: "/banners/sleep.mp4", label: "Moonlit satin" },
   { src: "/banners/lingerie.jpg", video: "/banners/lingerie.mp4", label: "Ruby lace night" },
-  { src: "/banners/lounge.jpg", label: "Emerald after dusk" },
-  { src: "/banners/tile-peacock.jpg", label: "Peacock silk" },
-  { src: "/banners/tile-emerald.jpg", label: "Emerald still" },
+  { src: "/banners/lounge.jpg", video: "/banners/lounge.mp4", label: "Emerald after dusk" },
+  { src: "/banners/tile-peacock.jpg", video: "/banners/tile-peacock.mp4", label: "Peacock silk" },
+  { src: "/banners/tile-emerald.jpg", video: "/banners/tile-emerald.mp4", label: "Emerald still" },
 ] as const;
