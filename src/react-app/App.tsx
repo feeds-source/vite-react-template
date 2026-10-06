@@ -28,7 +28,7 @@ type StoreOrder = {
   id: number; order_no: string; email: string; ship_name: string; ship_addr: string;
   subtotal_cents: number; shipping_cents: number; pack_cents?: number; tax_cents?: number;
   other_cents?: number; tax_label?: string; ship_country?: string; total_cents: number;
-  status: string; tracking: string | null; items: OrderItem[]; emails?: OrderEmail[];
+  status: string; tracking: string | null; created_at?: string; confirmed_at?: string | null; dispatched_at?: string | null; items: OrderItem[]; emails?: OrderEmail[];
 };
 
 const TOKEN_KEY = "femme_token";
@@ -234,6 +234,9 @@ function App() {
     }
   }, []);
   useEffect(() => { void refreshMe(token); }, [token, refreshMe]);
+  useEffect(() => {
+    if (view === "account" && token) void refreshMe(token);
+  }, [view, token, refreshMe]);
   useEffect(() => { localStorage.setItem(CART_KEY, JSON.stringify(cart.map((l) => ({ id: l.product.id, qty: l.qty, size: l.size })))); }, [cart]);
 
   useEffect(() => {
@@ -360,6 +363,28 @@ function App() {
     setAdminNotice(`Dispatch email written for ${data.order?.order_no}`);
     if (data.dispatchEmail) setOpenEmail(data.dispatchEmail);
     await loadAdminOrders();
+  }
+
+  function orderTrack(o: StoreOrder) {
+    const rank = o.status === "dispatched" ? 2 : o.status === "confirmed" ? 1 : 0;
+    const steps = [
+      { title: "Order placed", detail: "The atelier has your order. Cash on delivery." },
+      { title: "Confirmed", detail: rank >= 1 ? "Your order is being prepared." : "Waiting for the atelier to confirm." },
+      { title: "Dispatched", detail: o.tracking ? `Tracking ${o.tracking}` : "A tracking number appears here once it ships." },
+    ];
+    return (
+      <ol className="track" aria-label={`Tracking for ${o.order_no}`}>
+        {steps.map((step, i) => (
+          <li key={step.title} className={i < rank ? "done" : i === rank ? "now" : ""}>
+            <span className="track-mark" aria-hidden="true" />
+            <div>
+              <strong>{step.title}</strong>
+              <p className="muted">{step.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    );
   }
 
   function totalsBlock(o?: StoreOrder) {
@@ -514,15 +539,17 @@ function App() {
             {isAdmin && <button type="button" className="cta" onClick={() => { setView("admin"); void loadAdminOrders(); }}>Admin orders</button>}
             <button type="button" className="cta ghost" onClick={() => void handleLogout()}>Sign out</button>
           </div>
-          <h2 className="section-title">My orders</h2>
+          <h2 className="section-title">Track my orders</h2>
           {myOrders.length === 0 ? <p className="muted">No orders yet.</p> : (
             <ul className="order-list">{myOrders.map((o) => (
               <li key={o.id} className="order-card">
-                <strong>{o.order_no}</strong> <span className={`status ${o.status}`}>{o.status}</span>
+                <div className="order-head">
+                  <div><strong>{o.order_no}</strong> <span className={`status ${o.status}`}>{o.status}</span></div>
+                  <button type="button" className="cta ghost" onClick={() => printOrder(o)}>Print receipt</button>
+                </div>
+                {orderTrack(o)}
                 <ul className="receipt-lines">{receiptLines(o.items)}</ul>
                 {totalsBlock(o)}
-                {o.tracking && <p className="muted">Tracking {o.tracking}</p>}
-                <button type="button" className="cta ghost" onClick={() => printOrder(o)}>Print receipt</button>
               </li>
             ))}</ul>
           )}
@@ -586,9 +613,9 @@ function App() {
           {totalsBlock(placed)}
           <span className={`status ${placed.status}`}>{placed.status}</span>
           <div className="account-actions">
-            <button type="button" className="cta" onClick={() => printOrder(placed)}>Print receipt</button>
-            <button type="button" className="cta ghost" onClick={() => goShop()}>Add more products</button>
-            <button type="button" className="text-link" onClick={() => setView("account")}>My orders</button>
+            <button type="button" className="cta" onClick={() => setView("account")}>Track my order</button>
+            <button type="button" className="cta ghost" onClick={() => printOrder(placed)}>Print receipt</button>
+            <button type="button" className="text-link" onClick={() => goShop()}>Add more products</button>
           </div>
         </section>
       ) : (
