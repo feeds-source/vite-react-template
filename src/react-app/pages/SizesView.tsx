@@ -27,13 +27,15 @@ import type { FitResult } from "../data/size-guide";
 function Chart({
   columns,
   rows,
+  mark,
 }: {
   columns: string[];
   rows: Array<Array<string | number>>;
+  mark?: string;
 }) {
   return (
     <div className="table-wrap">
-      <table className="chart">
+      <table className={`chart${mark ? " live" : ""}`}>
         <thead>
           <tr>
             {columns.map((c) => (
@@ -43,7 +45,7 @@ function Chart({
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i}>
+            <tr key={i} className={mark && String(row[0]) === mark ? "is-you" : undefined}>
               {row.map((cell, j) => (
                 <td key={j}>{cell}</td>
               ))}
@@ -58,6 +60,24 @@ function Chart({
 export function SizesView({ onOpen }: { onOpen: (product: Product, size: string) => void }) {
   const [fit, setFit] = useState<FitResult | null>(null);
   const [focusId, setFocusId] = useState(PRODUCTS[0].id);
+  const bra = fit?.bra?.size ?? "";
+  const band = bra.slice(0, -1);
+  const cup = bra.slice(-1);
+  const body = fit?.body?.size ?? "";
+  const night = fit?.nighty?.size ?? "";
+  const gown = fit?.gown?.size ?? "";
+  const corset = fit?.corset?.size ?? "";
+  const hose = fit?.hose?.size ?? "";
+  const navSize: Record<string, string> = {
+    bras: bra,
+    body,
+    night,
+    gowns: gown,
+    corset,
+    hose,
+    swim: body,
+    free: fit ? "Free" : "",
+  };
   return (
     <>
       <section className="page-hero">
@@ -78,8 +98,8 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
       <nav className="guide-nav">
         <div className="guide-nav-inner">
           {GUIDE_NAV.map((c) => (
-            <a key={c.id} className="pill" href={`#${c.id}`}>
-              {c.kicker}
+            <a key={c.id} className={`pill${navSize[c.id] ? " is-on" : ""}`} href={`#${c.id}`}>
+              {c.kicker}{navSize[c.id] ? ` · ${navSize[c.id]}` : ""}
             </a>
           ))}
         </div>
@@ -142,7 +162,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
               <div key={`${band}-lab`} className="lab">{band}</div>,
               ...BRA_CUPS_CUT.map((cup) =>
                 braIsCut(band, cup) ? (
-                  <div key={`${band}${cup}`} className="heat-on">{band}{cup}</div>
+                  <div key={`${band}${cup}`} className={`heat-on${bra === `${band}${cup}` ? " is-you" : ""}`}>{band}{cup}</div>
                 ) : (
                   <div key={`${band}${cup}`} className="heat-off">—</div>
                 ),
@@ -157,11 +177,13 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <p className="lede">House labels are UK/US band and XS–XXL. Match a label from another market here before you order.</p>
           <p className="eyebrow">Band</p>
           <Chart
+            mark={band}
             columns={["UK / US", "EU", "FR / ES / BE", "IT", "AU / NZ", "PK"]}
             rows={INT_BAND.map((r) => [r.ukus, r.eu, r.fr, r.it, r.au, r.pk])}
           />
           <p className="eyebrow">Cup</p>
           <Chart
+            mark={cup}
             columns={["UK", "US", "EU", "FR", "Gap cm", "Gap in"]}
             rows={INT_CUP.map((r) => [r.uk, r.us, r.eu, r.fr, r.gapCm, r.gapIn])}
           />
@@ -172,6 +194,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <h2 className="section-title">{CHART_COPY.bra.title}</h2>
           <p className="lede">{CHART_COPY.bra.body}</p>
           <Chart
+            mark={bra}
             columns={["Size", "Underbust cm", "Underbust in", "Bust cm", "Bust in", "EU", "FR", "Sisters"]}
             rows={BRA_DETAIL.map((r) => [r.size, r.underCm, r.underIn, r.bustCm, r.bustIn, r.eu, r.fr, r.sisters])}
           />
@@ -182,11 +205,13 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <h2 className="section-title">{CHART_COPY.alpha.title}</h2>
           <p className="lede">{CHART_COPY.alpha.body}</p>
           <Chart
+            mark={body}
             columns={["Size", "Bust cm", "Waist cm", "Hip cm", "UK", "US", "EU"]}
             rows={ALPHA_ROWS.map((r) => [r.size, r.bust, r.waist, r.hip, r.uk, r.us, r.eu])}
           />
           <p className="eyebrow">Panties</p>
           <Chart
+            mark={body}
             columns={["Size", "Hip cm", "Hip in", "Waist cm", "Waist in"]}
             rows={PANTIES_ROWS.map((r) => [r.size, r.hip, spanIn(r.hip), r.waist, spanIn(r.waist)])}
           />
@@ -197,6 +222,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <h2 className="section-title">{CHART_COPY.nighty.title}</h2>
           <p className="lede">{CHART_COPY.nighty.body}</p>
           <Chart
+            mark={night}
             columns={["Size", "Bust", "Waist", "Hip", "Length", "Note"]}
             rows={NIGHTY_ROWS.map((r) => [r.size, r.bust, r.waist, r.hip, r.length, r.note])}
           />
@@ -207,6 +233,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <h2 className="section-title">{CHART_COPY.gown.title}</h2>
           <p className="lede">{CHART_COPY.gown.body}</p>
           <Chart
+            mark={gown}
             columns={["Size", "Bust", "Waist", "Hip", "Length", "Height", "Note"]}
             rows={GOWN_ROWS.map((r) => [r.size, r.bust, r.waist, r.hip, r.length, r.height, r.note])}
           />
@@ -217,6 +244,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <h2 className="section-title">Corsetry</h2>
           <p className="lede">Size to the open waist. Closed is after lacing. Hourglass, not squeeze.</p>
           <Chart
+            mark={corset}
             columns={["Size", "Waist closed", "Waist open", "Rib", "Reduction"]}
             rows={CORSET_ROWS.map((r) => [r.size, r.waistClosed, r.waistOpen, r.rib, r.reduction])}
           />
@@ -227,6 +255,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <h2 className="section-title">Hosiery</h2>
           <p className="lede">Height first, then thigh for the welt. If between, take the larger.</p>
           <Chart
+            mark={hose}
             columns={["Size", "Height", "Inseam", "Thigh", "Foot"]}
             rows={HOSE_ROWS.map((r) => [r.size, r.height, r.inseam, r.thigh, r.foot])}
           />
@@ -237,6 +266,7 @@ export function SizesView({ onOpen }: { onOpen: (product: Product, size: string)
           <h2 className="section-title">Swim</h2>
           <p className="lede">Triangle tops follow hip for the brief, nearest cup for the top.</p>
           <Chart
+            mark={body}
             columns={["Size", "Bust", "Hip", "Nearest cup"]}
             rows={SWIM_ROWS.map((r) => [r.size, r.bust, r.hip, r.cup])}
           />

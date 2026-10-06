@@ -249,6 +249,9 @@ img, video { max-width: 100%; }
 .chart th { padding: 0.75rem 1rem; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--line); font-weight: 600; white-space: nowrap; }
 .chart td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .chart td:first-child { color: var(--text-strong); font-weight: 600; }
+.chart.live tr:not(.is-you) td { opacity: 0.38; }
+.chart tr.is-you td { opacity: 1; background: rgba(212, 176, 106, 0.16); color: var(--gold-soft); }
+.heat-on.is-you { background: var(--gold); color: #1a0e08; border-color: var(--gold); }
 
 .atelier-foot .foot-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
