@@ -4,6 +4,7 @@ import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT } f
 import { CATEGORIES, PRODUCTS, defaultSize, sizesFor, type Product } from "./data/catalog";
 import { FOOTER_AISLES, ROOMS, type Room } from "./data/footer";
 import { ShopView } from "./pages/ShopView";
+import { FitView } from "./pages/FitView";
 import { SizesView } from "./pages/SizesView";
 import { AtelierView } from "./pages/AtelierView";
 import { SearchView } from "./pages/SearchView";
@@ -564,7 +565,8 @@ function App() {
 
   if (view === "product" && selected) {
     return shell(<main className="page"><button type="button" className="back" onClick={() => goShop()}>Back</button>
-      <div className="detail-grid"><div className="detail-hero" style={{ backgroundImage: `url(${selected.image})` }} />
+      <div className="detail-grid">
+        <FitView product={selected} size={sizeOf(selected)} sizes={sizesFor(selected)} onSize={(sz) => setPickSize((s) => ({ ...s, [selected.id]: sz }))} />
         <div className="detail-copy"><h1>{selected.name}</h1><p className="price">{money(selected.price)}</p><p>{selected.description}</p>
           <label className="size-label">Size
             <select className="size-select" value={sizeOf(selected)} onChange={(e) => setPickSize((s) => ({ ...s, [selected.id]: e.target.value }))}>

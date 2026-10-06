@@ -91,6 +91,32 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .back, .text-link { border: 0; background: none; color: var(--gold); cursor: pointer; padding: 0; font-weight: 600; }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
 .detail-hero { position: relative; min-height: 420px; border: 1px solid rgba(212, 176, 106, 0.25); background-size: cover; background-position: center; }
+.fit-view { display: flex; flex-direction: column; gap: 0.8rem; }
+.fit-stage { position: relative; min-height: 460px; border: 1px solid rgba(212, 176, 106, 0.25); background:
+  radial-gradient(ellipse at 50% 78%, rgba(212, 176, 106, 0.16), transparent 55%),
+  #120910; cursor: grab; overflow: hidden; touch-action: none; }
+.fit-stage:active { cursor: grabbing; }
+.fit-scene { position: absolute; inset: 8% 18% 14%; perspective: 900px; }
+.fit-turn { position: absolute; inset: 0; transform-style: preserve-3d; }
+.fit-face { position: absolute; inset: 0; background-size: cover; background-position: center; backface-visibility: hidden;
+  clip-path: polygon(50% 4%, 62% 8%, calc(50% + 18% * var(--form-bust, 1)) 22%, calc(50% + 10% * var(--form-waist, 1)) 42%, calc(50% + 22% * var(--form-hip, 1) * var(--garment, 1)) 70%, calc(50% + 16% * var(--garment, 1)) 98%, calc(50% - 16% * var(--garment, 1)) 98%, calc(50% - 22% * var(--form-hip, 1) * var(--garment, 1)) 70%, calc(50% - 10% * var(--form-waist, 1)) 42%, calc(50% - 18% * var(--form-bust, 1)) 22%, 38% 8%);
+}
+.fit-face.front { transform: translateZ(70px); }
+.fit-face.back { transform: rotateY(180deg) translateZ(70px); filter: brightness(0.45) saturate(0.8); }
+.fit-face.side { background: linear-gradient(180deg, #3a2418, #1a0d12 70%); width: 140px; left: calc(50% - 70px); right: auto; transform: rotateY(90deg) translateZ(70px); clip-path: polygon(20% 6%, 80% 6%, 70% 98%, 30% 98%); }
+.fit-face.side.right { transform: rotateY(-90deg) translateZ(70px); }
+.fit-hint { position: absolute; left: 0; right: 0; bottom: 0.7rem; margin: 0; text-align: center; letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.68rem; color: var(--gold); }
+.fit-controls { display: flex; flex-direction: column; gap: 0.45rem; }
+.fit-row { display: flex; gap: 0.6rem; align-items: flex-start; }
+.fit-row > span { width: 3.2rem; padding-top: 0.35rem; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.fit-pills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.fit-pills button { border: 1px solid rgba(212, 176, 106, 0.35); background: transparent; color: var(--gold-soft); padding: 0.28rem 0.5rem; cursor: pointer; font-size: 0.75rem; }
+.fit-pills button.on { background: var(--gold); color: #1a0e08; border-color: var(--gold); }
+.fit-read { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 1rem; }
+.fit-read li { display: flex; justify-content: space-between; gap: 0.6rem; border-bottom: 1px solid rgba(212, 176, 106, 0.18); padding: 0.25rem 0; font-size: 0.85rem; }
+.fit-tight { color: #ffb3d9; }
+.fit-close { color: var(--gold-soft); }
+.fit-easy, .fit-relaxed { color: #9be0c8; }
 .hero-mark { position: absolute; top: 1rem; left: 1rem; font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-soft); }
 .detail-copy h1 { margin: 0.3rem 0 0.5rem; color: var(--text-strong); font-family: var(--display); font-size: 2.4rem; }
 .price { margin: 0 0 1rem; color: var(--gold-soft); font-size: 1.3rem; font-weight: 700; }
