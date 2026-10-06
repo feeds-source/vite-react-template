@@ -119,6 +119,16 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .fit-tight { color: #ffb3d9; }
 .fit-close { color: var(--gold-soft); }
 .fit-easy, .fit-relaxed { color: #9be0c8; }
+.try-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 1.5rem; align-items: start; margin-top: 1rem; }
+.try-tape { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.7rem; }
+.try-tape label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.try-tape input { background: #120910; border: 1px solid rgba(212, 176, 106, 0.35); color: var(--text-strong); padding: 0.45rem 0.5rem; }
+.try-note { margin: 0.6rem 0 0; }
+.try-products { display: flex; gap: 0.45rem; overflow-x: auto; margin-top: 0.9rem; padding-bottom: 0.35rem; }
+.try-products button { flex: 0 0 96px; border: 1px solid rgba(212, 176, 106, 0.28); background: #120910; color: var(--gold-soft); padding: 0; cursor: pointer; text-align: left; }
+.try-products button.on { border-color: var(--gold); }
+.try-products img { display: block; width: 100%; height: 112px; object-fit: cover; }
+.try-products span { display: block; padding: 0.35rem 0.4rem 0.45rem; font-size: 0.68rem; line-height: 1.25; }
 .hero-mark { position: absolute; top: 1rem; left: 1rem; font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-soft); }
 .detail-copy h1 { margin: 0.3rem 0 0.5rem; color: var(--text-strong); font-family: var(--display); font-size: 2.4rem; }
 .price { margin: 0 0 1rem; color: var(--gold-soft); font-size: 1.3rem; font-weight: 700; }
@@ -248,7 +258,7 @@ img, video { max-width: 100%; }
   .nav > button { flex: none; text-align: left; }
   .mega { position: static; display: block; border: 0; }
   .burger { display: block; }
-  .detail-grid, .cart-layout, .foot-grid, .checkout-grid { grid-template-columns: 1fr; }
+  .detail-grid, .cart-layout, .foot-grid, .checkout-grid, .try-layout { grid-template-columns: 1fr; }
   .topbar { position: relative; }
 }
 

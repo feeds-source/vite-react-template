@@ -247,6 +247,7 @@ export const EXTRA_NAV = [
 
 export const GUIDE_NAV = [
   { id: "finder", kicker: "Find size" },
+  { id: "try", kicker: "Try room" },
   { id: "visuals", kicker: "Visuals" },
   { id: "convert", kicker: "Convert" },
   ...Object.values(CHART_COPY),

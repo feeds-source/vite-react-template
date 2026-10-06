@@ -18,6 +18,8 @@ import {
   spanIn,
   SWIM_ROWS,
 } from "../data/size-guide";
+import type { Product } from "../data/catalog";
+import { TryRoom } from "./TryRoom";
 
 function Chart({
   columns,
@@ -50,7 +52,7 @@ function Chart({
   );
 }
 
-export function SizesView() {
+export function SizesView({ onOpen }: { onOpen: (product: Product, size: string) => void }) {
   return (
     <>
       <section className="page-hero">
@@ -60,7 +62,7 @@ export function SizesView() {
           <p className="eyebrow">Atelier fittings</p>
           <h1 className="page-title">Size charts</h1>
           <p className="lede">
-            Find a size from the tape, then read the maps — bra heat, body ranges, corset lacing, hose, gowns.
+            Find a size from the tape, try it on a live piece, then read the maps.
           </p>
           <button type="button" className="pill" onClick={() => window.print()}>
             Print charts
@@ -95,6 +97,8 @@ export function SizesView() {
             ))}
           </ol>
         </section>
+
+        <TryRoom onOpen={onOpen} />
 
         <section id="visuals">
           <p className="eyebrow">Visual charts</p>

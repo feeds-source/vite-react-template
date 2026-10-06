@@ -752,7 +752,7 @@ function App() {
   );
 
   if (view === "sizes") {
-    return <div className="store">{header}<SizesView />{footer}</div>;
+    return <div className="store">{header}<SizesView onOpen={(p, size) => { setPickSize((s) => ({ ...s, [p.id]: size })); go("product", { product: p }); }} />{footer}</div>;
   }
 
   if (view === "home") {

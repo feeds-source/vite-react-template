@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { chartFor, type Product } from "../data/catalog";
-import { ALPHA_ROWS, GOWN_ROWS, NIGHTY_ROWS } from "../data/size-guide";
+import { ALPHA_ROWS, CORSET_ROWS, GOWN_ROWS, NIGHTY_ROWS, PANTIES_ROWS, SWIM_ROWS } from "../data/size-guide";
 
 type ShapeId = "petite" | "balanced" | "curvy" | "full";
 
@@ -36,6 +36,20 @@ function garmentOf(product: Product, size: string) {
     return { bust, waist: mid(row.waist), hip: mid(row.hip) };
   }
   if (chart === "free") return { bust: 92, waist: 74, hip: 100 };
+  if (product.category === "Panties") {
+    const row = PANTIES_ROWS.find((r) => r.size === size) ?? PANTIES_ROWS[2];
+    const body = ALPHA_ROWS.find((r) => r.size === size) ?? ALPHA_ROWS[2];
+    return { bust: mid(body.bust), waist: mid(row.waist), hip: mid(row.hip) };
+  }
+  if (product.category === "Swim") {
+    const row = SWIM_ROWS.find((r) => r.size === size) ?? SWIM_ROWS[2];
+    return { bust: mid(row.bust), waist: mid(row.bust) - 18, hip: mid(row.hip) };
+  }
+  if (product.category === "Corsetry") {
+    const row = CORSET_ROWS.find((r) => r.size === size) ?? CORSET_ROWS[2];
+    const waist = mid(row.waistOpen);
+    return { bust: mid(row.rib) + 8, waist, hip: waist + 26 };
+  }
   const row = ALPHA_ROWS.find((r) => r.size === size) ?? ALPHA_ROWS[2];
   return { bust: mid(row.bust), waist: mid(row.waist), hip: mid(row.hip) };
 }
