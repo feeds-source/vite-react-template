@@ -72,7 +72,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .wish-btn { position: absolute; top: 0.6rem; right: 0.6rem; z-index: 2; border: 0; background: rgba(8,4,12,0.65); color: #f0dfb4; width: 32px; height: 32px; cursor: pointer; }
 .card-hit { display: block; width: 100%; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
 .card-visual { position: relative; height: 230px; background: #160b16; overflow: hidden; }
-.card-visual img { width: 100%; height: 100%; object-fit: contain; display: block; background: #120910; }
+.card-visual img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s ease; }
+.card:hover .card-visual img { animation: none; transform: scale(1.08); }
 .card-body { padding: 0.95rem 1rem 1.15rem; }
 .card-cat { margin: 0 0 0.2rem; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
 .card-body h3 { margin: 0 0 0.35rem; color: var(--text-strong); font-size: 1.05rem; }
