@@ -22,6 +22,19 @@ function coverFallback(e: SyntheticEvent<HTMLImageElement>) {
   el.dataset.fallback = "1";
   el.src = "/banners/hero.jpg";
 }
+
+function Motion({ image, video, alt }: { image: string; video?: string; alt: string }) {
+  return (
+    <>
+      <img className="ken" src={image} alt={alt} onError={coverFallback} />
+      {video ? (
+        <video className="motion-video" autoPlay muted loop playsInline poster={image}>
+          <source src={video} type="video/mp4" />
+        </video>
+      ) : null}
+    </>
+  );
+}
 type CartLine = { product: Product; qty: number; size: string };
 type OrderItem = { product_id: string; name: string; qty: number; unit_cents: number };
 type OrderEmail = { id: number; kind: string; to_email: string; subject: string; body: string; status: string };
@@ -251,6 +264,20 @@ function App() {
 
   useEffect(() => {
     applyDocumentSeo({ view, product: selected, category, room });
+  }, [view, selected, category, room]);
+
+  useEffect(() => {
+    const kick = () => {
+      document.querySelectorAll<HTMLVideoElement>("video.motion-video").forEach((v) => {
+        v.muted = true;
+        if (v.paused) void v.play().catch(() => undefined);
+      });
+    };
+    kick();
+    const root = document.getElementById("root") ?? document.body;
+    const obs = new MutationObserver(kick);
+    obs.observe(root, { childList: true, subtree: true });
+    return () => obs.disconnect();
   }, [view, selected, category, room]);
 
   const refreshMe = useCallback(async (t: string | null) => {
@@ -802,7 +829,7 @@ function App() {
         <article key={p.id} className="card product-tile">
           <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
             <div className="card-visual">
-              <img className="ken" src={p.image} alt={p.name} onError={coverFallback} />
+              <Motion image={p.image} video={p.video} alt={p.name} />
               {p.tag && <span className="tag on-dark">{p.tag}</span>}
             </div>
           </button>
@@ -907,7 +934,7 @@ function App() {
         <div className="grid highlights-grid">{featured.map((p) => (
           <article key={p.id} className="card product-tile">
             <button type="button" className="card-hit" aria-label={p.name} onClick={() => { go("product", { product: p }); }}>
-              <div className="card-visual"><img className="ken" src={p.image} alt={p.name} onError={coverFallback} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
+              <div className="card-visual"><Motion image={p.image} video={p.video} alt={p.name} />{p.tag && <span className="tag on-dark">{p.tag}</span>}</div>
             </button>
             <div className="card-body"><p className="card-cat">{p.category}</p><h3>{p.name}</h3><p className="card-price">{money(p.price)}</p></div>
             <div className="card-actions">

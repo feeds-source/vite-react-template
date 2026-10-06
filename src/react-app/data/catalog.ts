@@ -136,26 +136,13 @@ export const COUNTRIES = [
 ] as const;
 
 const NO_FILM = new Set([
-  "ruby-brazilian",
-  "satin-night-set",
-  "silk-night-slip",
-  "satin-gown",
-  "emerald-teddy",
-  "getting-ready-robe",
-  "emerald-bustier",
-  "silk-kaftan",
-  "sculpt-midi",
-  "silk-bikini",
-  "lace-balconette-set",
-  "lace-camisole",
-  "ruby-babydoll",
-  "short-lace-nighty",
-  "noir-teddy",
-  "body-stocking",
-  "ivory-bridal-set",
-  "daily-hipster",
-  "plum-wrap",
-  "mesh-bodysuit",
+  "atelier-slip",
+  "champagne-sleep-set",
+  "cloud-bralette",
+  "invisible-brief",
+  "noir-robe",
+  "silk-leakproof",
+  "studio-bra",
 ]);
 
 const piece = (id: string) =>
