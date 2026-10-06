@@ -1,18 +1,17 @@
 import type { MouseEvent, ReactNode } from "react";
 import { AISLES, CAMPAIGNS } from "../data/banners";
-import { CATEGORIES } from "../data/catalog";
+import { CATEGORIES, categoryPath } from "../data/catalog";
 import { ROOMS, type Room } from "../data/footer";
 import { CAT_HERO } from "../data/house";
 
 function catHref(cat: string) {
-  return cat === "All" ? "/shop" : `/shop?cat=${encodeURIComponent(cat)}`;
+  return categoryPath(cat);
 }
 function roomHref(room: string) {
   return `/shop?room=${encodeURIComponent(room)}`;
 }
 function follow(e: MouseEvent<HTMLAnchorElement>, go: () => void) {
   if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-  e.preventDefault();
   go();
 }
 

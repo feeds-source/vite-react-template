@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { searchHouse, type HouseHit, type PageHit } from "../data/search";
 import type { Category, Product } from "../data/catalog";
+import { categoryPath } from "../data/catalog";
 
 export function SearchModal({
   open,
@@ -115,9 +116,8 @@ export function SearchModal({
                     <p className="eyebrow">Aisles & collections</p>
                     <div className="search-pills">
                       {hits.aisles.map((a) => (
-                        <a key={a.cat} href={`/shop?cat=${encodeURIComponent(a.cat)}`} className="pill" onClick={(e) => {
+                        <a key={a.cat} href={categoryPath(a.cat)} className="pill" onClick={(e) => {
                           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                          e.preventDefault();
                           onAisle(a.cat);
                         }}>
                           {a.cat}
@@ -133,7 +133,6 @@ export function SearchModal({
                       {hits.pages.map((p) => (
                         <a key={p.href} href={p.href} className="pill" onClick={(e) => {
                           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                          e.preventDefault();
                           onPage(p.href);
                         }}>
                           {p.title}
@@ -149,7 +148,6 @@ export function SearchModal({
                       {hits.products.map((p) => (
                         <a key={p.id} href={`/shop/${p.id}`} className="predictive-item" onClick={(e) => {
                           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                          e.preventDefault();
                           onProduct(p);
                         }}>
                           <span className="predictive-still">

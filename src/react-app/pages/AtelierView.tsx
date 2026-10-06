@@ -1,4 +1,5 @@
 import type { Category } from "../data/catalog";
+import { categoryPath } from "../data/catalog";
 import { EXCHANGE } from "../data/banners";
 import { ATELIER_CRAFT, ATELIER_LOOK, ATELIER_ROOMS } from "../data/house";
 
@@ -71,13 +72,10 @@ export function AtelierView({
               <p className="muted">{room.body}</p>
               <div className="nav-cats">
                 {room.cats.map((c) => (
-                  <a key={c} href={`/shop?cat=${encodeURIComponent(c)}`} className="pill" onClick={(e) => {
+                  <a key={c} href={categoryPath(c)} className="pill" onClick={(e) => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                    e.preventDefault();
                     onShop(c);
-                  }}>
-                    {c}
-                  </a>
+                  }}>{c}</a>
                 ))}
               </div>
             </article>

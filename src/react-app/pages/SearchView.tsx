@@ -1,5 +1,6 @@
 import { type FormEvent, type MouseEvent, type ReactNode, useEffect, useState } from "react";
 import { searchHouse, type AisleHit, type PageHit } from "../data/search";
+import { categoryPath } from "../data/catalog";
 
 export function SearchView({
   query,
@@ -30,7 +31,6 @@ export function SearchView({
 
   function follow(e: MouseEvent<HTMLAnchorElement>, go: () => void) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    e.preventDefault();
     go();
   }
 
@@ -78,7 +78,7 @@ export function SearchView({
             <p className="eyebrow">Aisles & collections</p>
             <div className="search-pills">
               {hits.aisles.map((a) => (
-                <a key={a.cat} href={`/shop?cat=${encodeURIComponent(a.cat)}`} className="pill" onClick={(e) => follow(e, () => onAisle(a.cat))}>
+                <a key={a.cat} href={categoryPath(a.cat)} className="pill" onClick={(e) => follow(e, () => onAisle(a.cat))}>
                   {a.cat}
                 </a>
               ))}

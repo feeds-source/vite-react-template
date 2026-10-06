@@ -127,6 +127,17 @@ export const CATEGORIES = [
   "Accessories",
 ] as const;
 
+export function categoryPath(cat: string) {
+  if (!cat || cat === "All") return "/shop";
+  const handle = cat.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `/shop/${handle}`;
+}
+
+export function categoryFromSlug(slug: string) {
+  const clean = decodeURIComponent(slug).toLowerCase();
+  return CATEGORIES.find((c) => c !== "All" && categoryPath(c) === `/shop/${clean}`) ?? null;
+}
+
 export const COUNTRIES = [
   "United Arab Emirates",
   "United Kingdom",

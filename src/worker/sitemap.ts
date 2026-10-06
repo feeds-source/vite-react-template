@@ -31,6 +31,11 @@ const CATEGORIES = [
   "Accessories",
 ];
 
+function categoryPath(cat: string) {
+  const handle = cat.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `/shop/${handle}`;
+}
+
 function escapeXml(value: string) {
   const amp = String.fromCharCode(38);
   return value
@@ -53,7 +58,7 @@ export function buildSitemapXml(lastmod = new Date().toISOString().slice(0, 10))
     { path: "/contact", changefreq: "yearly", priority: "0.3" },
   ];
   for (const room of ROOMS) urls.push({ path: `/shop?room=${encodeURIComponent(room)}`, changefreq: "weekly", priority: "0.8" });
-  for (const cat of CATEGORIES) urls.push({ path: `/shop?cat=${encodeURIComponent(cat)}`, changefreq: "weekly", priority: "0.7" });
+  for (const cat of CATEGORIES) urls.push({ path: categoryPath(cat), changefreq: "weekly", priority: "0.7" });
   for (const p of CATALOG) urls.push({ path: `/shop/${p.id}`, changefreq: "weekly", priority: "0.8" });
 
   return `<?xml version="1.0" encoding="UTF-8"?>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type MouseEv
 import { useAuth0 } from "@auth0/auth0-react";
 import "./App.css";
 import { AISLES, CAMPAIGNS, HERO, MARQUEE, TRUST, STORY, ANNOUNCEMENT, SPLIT, EXCHANGE } from "./data/banners";
-import { CATEGORIES, PRODUCTS, defaultSize, materialsFor, sizesFor, type Product } from "./data/catalog";
+import { CATEGORIES, PRODUCTS, categoryFromSlug, categoryPath, defaultSize, materialsFor, sizesFor, type Product } from "./data/catalog";
 import { FOOTER_AISLES, ROOMS, type Room } from "./data/footer";
 import { ShopView } from "./pages/ShopView";
 import { FitView } from "./pages/FitView";
@@ -126,8 +126,7 @@ function pathFor(view: View, opts?: { cat?: string; product?: Product | null; q?
   }
   if (view === "shop") {
     if (opts?.room) return `/shop?room=${encodeURIComponent(opts.room)}`;
-    const cat = opts?.cat;
-    return cat && cat !== "All" ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop";
+    return categoryPath(opts?.cat || "All");
   }
   if (view === "product") return opts?.product ? `/shop/${opts.product.id}` : "/shop";
   if (view === "sizes") return "/size-guide";
@@ -143,14 +142,13 @@ function pathFor(view: View, opts?: { cat?: string; product?: Product | null; q?
 }
 
 function catHref(cat: string) {
-  return cat && cat !== "All" ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop";
+  return categoryPath(cat);
 }
 function roomHref(room: string) {
   return `/shop?room=${encodeURIComponent(room)}`;
 }
 function follow(e: ReactMouseEvent<HTMLAnchorElement>, go: () => void) {
   if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-  e.preventDefault();
   go();
 }
 
@@ -169,9 +167,10 @@ function parseLocation(): { view: View; cat: (typeof CATEGORIES)[number]; produc
   if (path.startsWith("/shop/")) {
     const id = decodeURIComponent(path.slice("/shop/".length));
     const product = PRODUCTS.find((p) => p.id === id) ?? null;
-    return product
-      ? { view: "product", cat: product.category, product, q, room: "" }
-      : { view: "shop", cat, product: null, q, room: "" };
+    if (product) return { view: "product", cat: product.category, product, q, room: "" };
+    const fromSlug = categoryFromSlug(id);
+    if (fromSlug) return { view: "shop", cat: fromSlug, product: null, q, room: "" };
+    return { view: "shop", cat, product: null, q, room: "" };
   }
   const map: Record<string, View> = {
     "/size-guide": "sizes",
